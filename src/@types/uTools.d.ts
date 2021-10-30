@@ -16,6 +16,13 @@ declare namespace utools {
     export function isWindows(): boolean;
     export function isLinux(): boolean;
 
+    export function simulateMouseClick(x: number, y: number): void;
+    export function simulateMouseDoubleClick(x: number, y: number): void;
+
+    export function getUser(): { avatar: string, nickname: string, type: 'member' | 'user' } | null;
+
+    export function shellOpenExternal(url: string): void;
+
     export namespace db {
         interface DbObject {
             _id: string;

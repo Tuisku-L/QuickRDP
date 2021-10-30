@@ -21,9 +21,11 @@
   },
   "dependencies": {
     "@ant-design/pro-layout": "^6.5.0",
+    "@types/screenshot-desktop": "^1.12.0",
     "@umijs/preset-react": "1.x",
     "antd": "^4.15.0",
     "linq": "^3.2.3",
+    "screenshot-desktop": "^1.12.7",
     "umi": "^3.4.7"
   },
   "devDependencies": {

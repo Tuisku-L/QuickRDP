@@ -7,5 +7,6 @@ declare global {
         __dirname: string;
         terminalType: "Terminal" | "iTerm" | "cmd" | "PowerShell";
         fs: any;
+        os: any;
     }
 }
