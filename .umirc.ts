@@ -7,6 +7,7 @@ export default defineConfig({
     routes: [
         {
             path: '/',
+            exact: true,
             component: '@/layouts/_mainLayout',
             routes: [
                 {
@@ -19,6 +20,11 @@ export default defineConfig({
                 }
             ]
         },
+        {
+            path:"/remote",
+            component: "@/pages/Remote",
+            exact: true
+        }
     ],
     fastRefresh: {},
     history: {

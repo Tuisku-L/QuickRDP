@@ -73,6 +73,11 @@ export default class Index extends React.Component<any, IState>{
                                 高级设置
                             </div>
                         </Link>
+                        <Link to="/remote">
+                            <div className={`${styles.line}${activePage === "setting" ? ` ${styles.active}` : ""}`}>
+                                test
+                            </div>
+                        </Link>
                     </div>
                 </Col>
                 <Col span={18} className={styles.mainInfo}>

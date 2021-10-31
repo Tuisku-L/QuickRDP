@@ -8,5 +8,8 @@ declare global {
         terminalType: "Terminal" | "iTerm" | "cmd" | "PowerShell";
         fs: any;
         os: any;
+        socketClient: any;
+        socketServer: any;
+        socketLocal: any;
     }
 }

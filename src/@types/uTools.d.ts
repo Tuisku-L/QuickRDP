@@ -23,6 +23,10 @@ declare namespace utools {
 
     export function shellOpenExternal(url: string): void;
 
+    export function screenCapture(callback: Function): void;
+    export function getPrimaryDisplay(): any;
+    export function getAllDisplays(): any;
+
     export namespace db {
         interface DbObject {
             _id: string;
