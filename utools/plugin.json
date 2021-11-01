@@ -24,7 +24,7 @@
         }
     ],
     "development": {
-        "main": "http://127.0.0.1:8000/index.html"
+        "main": "http://192.168.60.100:8000/index.html"
     },
     "pluginSetting": {
         "single": false

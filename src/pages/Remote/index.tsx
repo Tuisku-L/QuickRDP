@@ -9,7 +9,6 @@ export default class Index extends React.Component<any, IState>{
   imgRef: HTMLCanvasElement | null = null;
   imgContext: CanvasRenderingContext2D | null = null;
   videoRef: HTMLVideoElement | null = null;
-  videoRef2: HTMLVideoElement | null = null;
 
   constructor(props: any) {
     super(props);
@@ -19,53 +18,46 @@ export default class Index extends React.Component<any, IState>{
   }
 
   componentDidMount = async () => {
-    // alert(1)
-    // if (this.imgRef) {
-    //   this.imgContext = this.imgRef.getContext("2d");
-    // };
-    // let blob = new Blob();
-    // let int8Array = new Int8Array();
-    // let img = new Image();
-    // setInterval(async () => {
-    //   window.utools.screenCapture((base64: string) => {
-    //     img.src = base64;
-    //     if (this.imgContext) {
-    //       this.imgContext.drawImage(img, 0, 0)
+    console.info("123123");
+    await this.actionInitRemote("ws://192.168.60.100:9550");
+  }
 
-    //     }
-    //   });
-    //   // const sdImg = await window.screenshotDesktop();
-    //   // if (this.imgContext) {
-    //   //   int8Array = new Int8Array(sdImg);
-    //   //   blob = new Blob([int8Array]);
-    //   //   const imageBitmap = await createImageBitmap(blob);
-    //   //   this.imgContext.drawImage(imageBitmap, 0, 0)
-    //   // }
-    // }, 5)
-    const display = window.utools.getPrimaryDisplay()
-    const sources = await window.desktopCapturer.getSources({
-      types: ["screen"]
-    });
-    console.info("display", display, sources);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          // @ts-ignore
-          mandatory: {
-            chromeMediaSource: 'desktop',
-            chromeMediaSourceId: "screen:1:0"
-          }
-        },
-      });
-      console.info("stream", stream);
-      if (this.videoRef2) {
-        this.videoRef2.srcObject = stream;
+  actionInitRemote = async (wsServer: string) => {
+    const config = {
+      iceServers: []
+    };
+    const conn = new RTCPeerConnection(config);
+    window.conn = conn
+
+    conn.onicecandidate = (e) => {
+      console.info("e", e);
+      if (e.candidate) {
+        console.info("e.candidate", e.candidate);
+        conn.addIceCandidate(new RTCIceCandidate(e.candidate));
       }
-      this.actionStartPeerConnection(stream)
-    } catch (error) {
-      console.info("error", error);
-    }
+    };
+
+    // @ts-ignore
+    conn.onaddstream = (e) => {
+      console.info("addsteam", e);
+      if (this.videoRef) {
+        this.videoRef.srcObject = e.stream;
+      }
+    };
+
+    const remoteWs = window.socketClient.connect(wsServer);
+    const offer = await conn.createOffer();
+    conn.setLocalDescription(offer);
+    console.info("发送 offer", offer);
+    remoteWs.emit("rdp_pre_connection", offer);
+
+    remoteWs.on("rdp_webrtc_answer", async (data) => {
+      console.info("rdp_webrtc_answer", data);
+      const answer = data;
+      conn.setRemoteDescription(answer);
+
+      remoteWs.emit("rdp_connection", {});
+    });
   }
 
   actionOnClick = (event: React.MouseEvent<HTMLVideoElement, MouseEvent>) => {
@@ -110,6 +102,7 @@ export default class Index extends React.Component<any, IState>{
     const offer = await connectionSelf.createOffer();
     connectionSelf.setLocalDescription(offer);
     connectionRemote.setRemoteDescription(offer);
+    
     const answer = await connectionRemote.createAnswer();
     connectionRemote.setLocalDescription(answer);
     connectionSelf.setRemoteDescription(answer);
@@ -126,14 +119,6 @@ export default class Index extends React.Component<any, IState>{
           ref={ref => this.videoRef = ref}
           width={500}
           style={{ border: "5px solid red" }}
-        />
-        <br />
-        <video
-          autoPlay
-          onClick={this.actionOnClick}
-          ref={ref => this.videoRef2 = ref}
-          width={500}
-          style={{ border: "5px solid green" }}
         />
       </div>
     </div>;
