@@ -6,24 +6,25 @@ export default defineConfig({
     },
     routes: [
         {
+            path:"/remote",
+            component: "@/pages/Remote",
+            exact: true
+        },
+        {
             path: '/',
-            exact: true,
             component: '@/layouts/_mainLayout',
             routes: [
                 {
                     path: "/",
+                    exact: true,
                     component: "@/pages/Index"
                 },
                 {
                     path: "/setting",
+                    exact: true,
                     component: "@/pages/Setting"
                 }
             ]
-        },
-        {
-            path:"/remote",
-            component: "@/pages/Remote",
-            exact: true
         }
     ],
     fastRefresh: {},

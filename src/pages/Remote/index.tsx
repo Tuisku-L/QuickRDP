@@ -9,6 +9,7 @@ export default class Index extends React.Component<any, IState>{
   imgRef: HTMLCanvasElement | null = null;
   imgContext: CanvasRenderingContext2D | null = null;
   videoRef: HTMLVideoElement | null = null;
+  videoRef2: HTMLVideoElement | null = null;
 
   constructor(props: any) {
     super(props);
@@ -58,9 +59,10 @@ export default class Index extends React.Component<any, IState>{
         },
       });
       console.info("stream", stream);
-      if (this.videoRef) {
-        this.videoRef.srcObject = stream;
+      if (this.videoRef2) {
+        this.videoRef2.srcObject = stream;
       }
+      this.actionStartPeerConnection(stream)
     } catch (error) {
       console.info("error", error);
     }
@@ -72,21 +74,66 @@ export default class Index extends React.Component<any, IState>{
     window.utools.simulateMouseClick(clientX, clientY);
   }
 
+  actionStartPeerConnection = async (stream: MediaStream) => {
+    const config = {
+      iceServers: []
+    };
+    const connectionSelf = new RTCPeerConnection(config);
+    const connectionRemote = new RTCPeerConnection(config);
+
+    connectionSelf.onicecandidate = (e) => {
+      console.info("e", e);
+      if (e.candidate) {
+        console.info("e.candidate", e.candidate);
+        connectionRemote.addIceCandidate(new RTCIceCandidate(e.candidate));
+      }
+    };
+
+    connectionRemote.onicecandidate = (e) => {
+      console.info("e", e);
+      if (e.candidate) {
+        console.info("e.candidate", e.candidate);
+        connectionSelf.addIceCandidate(new RTCIceCandidate(e.candidate));
+      }
+    };
+
+    // @ts-ignore
+    connectionRemote.onaddstream = (e) => {
+      if (this.videoRef) {
+        this.videoRef.srcObject = e.stream;
+      }
+    };
+
+    // @ts-ignore
+    connectionSelf.addStream(stream);
+
+    const offer = await connectionSelf.createOffer();
+    connectionSelf.setLocalDescription(offer);
+    connectionRemote.setRemoteDescription(offer);
+    const answer = await connectionRemote.createAnswer();
+    connectionRemote.setLocalDescription(answer);
+    connectionSelf.setRemoteDescription(answer);
+  }
+
   public render() {
     const { sdImg } = this.state;
 
     return <div>
       <div>
-        {/* <canvas
-          ref={ref => this.imgRef = ref}
-          height="400"
-          width="800"
-          onClick={this.actionOnClick}
-        /> */}
         <video
           autoPlay
           onClick={this.actionOnClick}
           ref={ref => this.videoRef = ref}
+          width={500}
+          style={{ border: "5px solid red" }}
+        />
+        <br />
+        <video
+          autoPlay
+          onClick={this.actionOnClick}
+          ref={ref => this.videoRef2 = ref}
+          width={500}
+          style={{ border: "5px solid green" }}
         />
       </div>
     </div>;

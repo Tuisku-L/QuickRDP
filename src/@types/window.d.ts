@@ -11,5 +11,6 @@ declare global {
         socketClient: any;
         socketServer: any;
         socketLocal: any;
+        desktopCapturer: any;
     }
 }
