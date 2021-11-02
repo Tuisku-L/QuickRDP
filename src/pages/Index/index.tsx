@@ -54,7 +54,7 @@ export default class Index extends React.Component<any, IState> {
             <div className={styles.infoBlock}>
               <div style={{ width: '100%' }}>
                 <AutoComplete
-                  options={[{ value: '192.168.2.221', label: '192.168.2.221' }]}
+                  options={[{ value: '192.168.60.100', label: '192.168.60.100' }]}
                   style={{ width: '100%' }}
                 >
                   <Input.Search

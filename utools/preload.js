@@ -52,6 +52,11 @@ socket.on('connection', (socketServer) => {
     socketServer.broadcast.emit('rdp_answer_cecandidate', data);
   });
 
+  socketServer.on('rdp_event_click', (data) => {
+    console.info('收到远程桌面 rdp_event_click 请求', data);
+    socketServer.broadcast.emit('rdp_event_click', data);
+  });
+
   socketServer.on('rdp_disconnection', () => {
     console.info('收到远程桌面关闭请求');
     if (client != null) {
