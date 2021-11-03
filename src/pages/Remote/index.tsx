@@ -19,7 +19,7 @@ export default class Index extends React.Component<any, IState> {
 
   componentDidMount = async () => {
     console.info('123123');
-    await this.actionInitRemote('ws://192.168.60.100:9550');
+    await this.actionInitRemote('ws://192.168.2.221:9550');
   };
 
   actionInitRemote = async (wsServer: string) => {
@@ -29,7 +29,7 @@ export default class Index extends React.Component<any, IState> {
     const conn = new RTCPeerConnection(config);
     window.conn = conn;
 
-    this.remoteWs = window.socketClient.connect(wsServer);
+    this.remoteWs = window.remoteWs;
 
     conn.onicecandidate = (e) => {
       console.info('e', e);
@@ -48,7 +48,7 @@ export default class Index extends React.Component<any, IState> {
       }
     };
 
-    this.remoteWs.emit('rdp_pre_connection', {});
+    this.remoteWs.emit('rdp_connection_ready', {});
 
     this.remoteWs.on('rdp_webrtc_offer', async (offer) => {
       conn.setRemoteDescription(offer);
@@ -67,13 +67,11 @@ export default class Index extends React.Component<any, IState> {
     console.info('x: ', event.clientX, 'y: ', event.clientY);
     const { clientX, clientY } = event;
     if (this.remoteWs) {
-      this.remoteWs.emit("rdp_event_click", { x: clientX, y: clientY });
+      this.remoteWs.emit('rdp_event_click', { x: clientX, y: clientY });
     }
   };
 
   public render() {
-    const { sdImg } = this.state;
-
     return (
       <div>
         <div>

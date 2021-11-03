@@ -21,6 +21,18 @@ socket.on('connection', (socketServer) => {
   console.info('connection');
   window.socketServer = socketServer;
 
+  socketServer.on('rdp_connection_ready', (data) => {
+    console.info('收到远程桌面 rdp_connection_ready 请求', data);
+    // 连接本机 WS 服务器
+    socketServer.broadcast.emit('rdp_connection_ready', data);
+  });
+
+  socketServer.on('rdp_remote_info', (data) => {
+    console.info('收到远程桌面 rdp_remote_info 请求', data);
+    // 连接本机 WS 服务器
+    socketServer.broadcast.emit('rdp_remote_info', data);
+  });
+
   socketServer.on('rdp_pre_connection', (data) => {
     console.info('收到远程桌面预连接请求', data);
     // 连接本机 WS 服务器

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Button, Input, AutoComplete } from 'antd';
+import { Button, Input, AutoComplete, Modal } from 'antd';
 import {
   CopyOutlined,
   EyeOutlined,
@@ -43,6 +43,18 @@ export default class Index extends React.Component<any, IState> {
     });
   }
 
+  actionInitPreConnection = async (wsServer: string) => {
+    window.remoteWs = window.socketClient.connect(`ws://${wsServer}:9550`);
+
+    Modal.confirm({
+      title: '',
+      content: <div>请输入连接密码</div>,
+      onOk: async () => {
+        window.remoteWs = window.socketClient.connect(`ws://${wsServer}:9550`);
+      },
+    });
+  };
+
   public render() {
     const { ipAddress, showPwd } = this.state;
 
@@ -54,7 +66,7 @@ export default class Index extends React.Component<any, IState> {
             <div className={styles.infoBlock}>
               <div style={{ width: '100%' }}>
                 <AutoComplete
-                  options={[{ value: '192.168.60.100', label: '192.168.60.100' }]}
+                  options={[{ value: '192.168.2.221', label: '192.168.2.221' }]}
                   style={{ width: '100%' }}
                 >
                   <Input.Search
