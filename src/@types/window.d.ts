@@ -18,6 +18,7 @@ declare global {
         callback: (data: { deviceId: string; data: any }) => any,
       ) => {};
       emit: Function;
+      disconnect: Function;
     };
     desktopCapturer: any;
     displaysInfo: Array<RDP.DisplayInfo>;

@@ -27,6 +27,8 @@ declare namespace utools {
     export function getPrimaryDisplay(): any;
     export function getAllDisplays(): any;
 
+    export function createBrowserWindow(url: string, options?: any, callback?: Function): any;
+
     export namespace db {
         interface DbObject {
             _id: string;

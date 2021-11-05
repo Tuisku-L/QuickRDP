@@ -105,33 +105,71 @@ export default class Index extends React.Component<any, IState> {
 
     window.socketLocal = window.socketClient.connect('ws://localhost:9550');
 
-    window.socketLocal.on('rdp_pre_connection', async (data) => {
+    window.socketLocal.on('rdp_pre_connection', (data) => {
+      console.info("datadatadatadatav", data);
       if (data.deviceId !== window.deviceId) {
         const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
         const user = window.utools.getUser();
 
         if (data.data.userHash && data.data.userHash !== '') {
+          console.info("setting.selfConnect", setting.selfConnect, data.data.userHash, user?.avatar)
           if (setting.selfConnect && data.data.userHash === user?.avatar) {
-            window.socketLocal.emit('rdp_verify_type', {
+            window.socketLocal.emit('rdp_remote_info', {
               deviceId: window.deviceId,
-              data: { verifyType: 'none' },
+              data: {
+                verifyType: 'none',
+                displayInfo: window.displaysInfo
+              },
             });
             return;
           }
         }
 
-        window.socketLocal.emit('rdp_verify_type', {
+        window.socketLocal.emit('rdp_remote_info', {
           deviceId: window.deviceId,
           data: { verifyType: 'password' },
         });
       }
     });
 
-    window.socketLocal.on('rdp_verification', async (data) => {
+    window.socketLocal.on('rdp_login_try', async (data) => {
       if (data.deviceId !== window.deviceId) {
-        const pwd = data.data.pwd;
+        const pwd = data.data.password;
         const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
+        const user = window.utools.getUser();
+
         const personalPwd = setting.personalPwd;
+        const currentPwd = window.utools.db.get<RDP.Password>(`${window.deviceId}/currentPwd`).password;
+
+        if (setting.selfConnect) {
+          if (pwd === user?.avatar) {
+            this.actionSendLoginSuccess();
+            return;
+          }
+        }
+
+        if (setting.vaildType === "both") {
+          if (personalPwd === pwd || currentPwd === pwd) {
+            this.actionSendLoginSuccess();
+            return;
+          }
+        }
+
+        if (setting.vaildType === "temp") {
+          if (currentPwd === pwd) {
+            this.actionSendLoginSuccess();
+            return;
+          }
+        }
+
+        if (setting.vaildType === "personal") {
+          if (personalPwd === pwd) {
+            this.actionSendLoginSuccess();
+            return;
+          }
+        }
+
+        this.actionSendLoginFaild("密码验证失败");
       }
     });
 
@@ -166,6 +204,20 @@ export default class Index extends React.Component<any, IState> {
       }
     });
   };
+
+  actionSendLoginSuccess = () => {
+    window.socketLocal.emit("rdp_login_success", {
+      deviceId: window.deviceId,
+      data: window.displaysInfo
+    });
+  }
+
+  actionSendLoginFaild = (msg: string) => {
+    window.socketLocal.emit("rdp_login_faild", {
+      deviceId: window.deviceId,
+      data: msg
+    });
+  }
 
   actionGetDisplayStream = async () => {
     const displays = window.utools.getAllDisplays();
@@ -231,9 +283,8 @@ export default class Index extends React.Component<any, IState> {
                 onClick={() => this.setState({ activePage: 'index' })}
               >
                 <div
-                  className={`${styles.line}${
-                    activePage === 'index' ? ` ${styles.active}` : ''
-                  }`}
+                  className={`${styles.line}${activePage === 'index' ? ` ${styles.active}` : ''
+                    }`}
                 >
                   设备信息
                 </div>
@@ -243,18 +294,16 @@ export default class Index extends React.Component<any, IState> {
                 onClick={() => this.setState({ activePage: 'setting' })}
               >
                 <div
-                  className={`${styles.line}${
-                    activePage === 'setting' ? ` ${styles.active}` : ''
-                  }`}
+                  className={`${styles.line}${activePage === 'setting' ? ` ${styles.active}` : ''
+                    }`}
                 >
                   高级设置
                 </div>
               </Link>
               <Link to="/remote">
                 <div
-                  className={`${styles.line}${
-                    activePage === 'setting' ? ` ${styles.active}` : ''
-                  }`}
+                  className={`${styles.line}${activePage === 'setting' ? ` ${styles.active}` : ''
+                    }`}
                 >
                   test
                 </div>

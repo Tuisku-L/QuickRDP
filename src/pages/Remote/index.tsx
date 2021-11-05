@@ -19,7 +19,7 @@ export default class Index extends React.Component<any, IState> {
 
   componentDidMount = async () => {
     console.info('123123');
-    await this.actionInitRemote('192.168.2.221');
+    await this.actionInitRemote('192.168.60.100');
   };
 
   actionInitRemote = async (wsServer: string) => {
@@ -54,11 +54,8 @@ export default class Index extends React.Component<any, IState> {
 
     const user = window.utools.getUser();
 
-    this.remoteWs!.emit('rdp_pre_connection', {
-      deviceId: window.deviceId,
-      data: {
-        userHash: user?.avatar,
-      },
+    this.remoteWs!.emit('rdp_connection_ready', {
+      deviceId: window.deviceId
     });
 
     this.remoteWs!.on('rdp_webrtc_offer', async (offer) => {
@@ -82,12 +79,12 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionOnClick = (event: React.MouseEvent<HTMLVideoElement, MouseEvent>) => {
-    console.info('x: ', event.clientX, 'y: ', event.clientY);
-    const { clientX, clientY } = event;
+    console.info('x: ', event.pageX, 'y: ', event.pageY);
+    const { pageX, pageY } = event;
     if (this.remoteWs) {
       this.remoteWs.emit('rdp_event_click', {
         deviceId: window.deviceId,
-        data: { x: clientX, y: clientY },
+        data: { x: pageX, y: pageY },
       });
     }
   };

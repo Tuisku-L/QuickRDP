@@ -36,6 +36,24 @@ socket.on('connection', (socketServer) => {
     socketServer.broadcast.emit('rdp_remote_info', data);
   });
 
+  socketServer.on('rdp_login_success', (data) => {
+    console.info('收到远程桌面 rdp_login_success 请求', data);
+    // 连接本机 WS 服务器
+    socketServer.broadcast.emit('rdp_login_success', data);
+  });
+  
+  socketServer.on('rdp_login_faild', (data) => {
+    console.info('收到远程桌面 rdp_login_faild 请求', data);
+    // 连接本机 WS 服务器
+    socketServer.broadcast.emit('rdp_login_faild', data);
+  });
+  
+  socketServer.on('rdp_login_try', (data) => {
+    console.info('收到远程桌面 rdp_login_try 请求', data);
+    // 连接本机 WS 服务器
+    socketServer.broadcast.emit('rdp_login_try', data);
+  });
+  
   socketServer.on('rdp_pre_connection', (data) => {
     console.info('收到远程桌面预连接请求', data);
     // 连接本机 WS 服务器

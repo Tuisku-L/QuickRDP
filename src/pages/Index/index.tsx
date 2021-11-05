@@ -16,15 +16,18 @@ interface IState {
   ipAddress: string[];
   showPwd: boolean;
   currentPwd: RDP.Password | null;
+  remoteIpAddress: string;
 }
 
 export default class Index extends React.Component<any, IState> {
+  pwdInput: Input | null = null;
   constructor(props: any) {
     super(props);
     this.state = {
       ipAddress: [],
       showPwd: true,
       currentPwd: null,
+      remoteIpAddress: ""
     };
   }
 
@@ -75,16 +78,79 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionInitPreConnection = async (wsServer: string) => {
-    history.push('/remote');
+    let remoteWs: typeof window.socketLocal | null = window.socketClient.connect(`ws://${wsServer}:9550`);
 
-    // Modal.confirm({
-    //   title: '',
-    //   content: <div>请输入连接密码</div>,
-    //   onOk: async () => {
-    //     window.remoteWs = window.socketClient.connect(`ws://${wsServer}:9550`);
-    //   },
-    // });
+    const user = window.utools.getUser();
+
+    remoteWs!.emit('rdp_pre_connection', {
+      deviceId: window.deviceId,
+      data: {
+        userHash: user?.avatar,
+      },
+    });
+
+    remoteWs!.on("rdp_remote_info", (data) => {
+      if (data.deviceId !== window.deviceId) {
+        if (data.data.verifyType === "none") {
+          this.actionOpenRemoteWindow(wsServer, data.data.displayInfo);
+        } else {
+          Modal.confirm({
+            title: '',
+            content: <div>
+              <div>请输入连接密码</div>
+              <div><Input ref={ref => this.pwdInput = ref} /></div>
+            </div>,
+            onOk: () => {
+              if (this.pwdInput) {
+                const password = this.pwdInput.state.value;
+                remoteWs!.emit("rdp_login_try", {
+                  deviceId: window.deviceId,
+                  data: {
+                    password
+                  }
+                });
+              }
+            },
+            onCancel: () => {
+              remoteWs!.disconnect();
+              remoteWs = null;
+            },
+            okText: "连接",
+            cancelText: "取消"
+          });
+        }
+      }
+    });
+
+    remoteWs!.on("rdp_login_success", data => {
+      if (data.deviceId !== window.deviceId) {
+        const displayInfo = data.data;
+        remoteWs!.disconnect();
+        remoteWs = null;
+        this.actionOpenRemoteWindow(wsServer, displayInfo);
+      }
+    });
+
+    remoteWs!.on("rdp_login_faild", data => {
+      if (data.deviceId !== window.deviceId) {
+        Modal.warning({
+          title: "连接失败",
+          content: data.data
+        });
+        remoteWs!.disconnect();
+        remoteWs = null;
+      }
+    });
   };
+
+  actionOpenRemoteWindow = (remoteIp: string, displayInfo: Array<RDP.DisplayInfo>) => {
+    console.info("login success", displayInfo);
+    const remoteWindow = window.utools.createBrowserWindow("dev.html", {
+      webPreferences: {
+        preload: "remote_preload.js"
+      }
+    }, () => { remoteWindow.webContents.openDevTools() })
+  }
 
   actionCopyIpAddress = (ip: string) => {
     if (copy(ip)) {
@@ -93,7 +159,7 @@ export default class Index extends React.Component<any, IState> {
   };
 
   public render() {
-    const { ipAddress, showPwd, currentPwd } = this.state;
+    const { ipAddress, showPwd, currentPwd, remoteIpAddress } = this.state;
 
     return (
       <div className={styles.contentBox}>
@@ -112,8 +178,9 @@ export default class Index extends React.Component<any, IState> {
                     allowClear
                     placeholder="远程设备地址"
                     style={{ width: '100%' }}
+                    onChange={e => this.setState({ remoteIpAddress: e.target.value })}
                     onSearch={() =>
-                      this.actionInitPreConnection('192.168.2.221')
+                      this.actionInitPreConnection(remoteIpAddress)
                     }
                   />
                 </AutoComplete>
