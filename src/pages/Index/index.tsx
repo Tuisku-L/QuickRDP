@@ -1,6 +1,8 @@
 import React from 'react';
+import { history } from 'umi';
+import { copy } from 'iclipboard';
 
-import { Button, Input, AutoComplete, Modal } from 'antd';
+import { Button, Input, AutoComplete, Modal, message } from 'antd';
 import {
   CopyOutlined,
   EyeOutlined,
@@ -13,6 +15,7 @@ import styles from './styles.less';
 interface IState {
   ipAddress: string[];
   showPwd: boolean;
+  currentPwd: RDP.Password | null;
 }
 
 export default class Index extends React.Component<any, IState> {
@@ -21,6 +24,7 @@ export default class Index extends React.Component<any, IState> {
     this.state = {
       ipAddress: [],
       showPwd: true,
+      currentPwd: null,
     };
   }
 
@@ -41,22 +45,55 @@ export default class Index extends React.Component<any, IState> {
     this.setState({
       ipAddress,
     });
+    let password = window.utools.db.get<RDP.Password>(
+      `${window.deviceId}/currentPwd`,
+    );
+    console.info('password', password);
+    this.setState({
+      currentPwd: password,
+    });
   }
 
-  actionInitPreConnection = async (wsServer: string) => {
-    window.remoteWs = window.socketClient.connect(`ws://${wsServer}:9550`);
+  actionGeneratePwd = () => {
+    return Math.floor(
+      Math.random() * (999999 - 100000 + 1) + 100000,
+    ).toString();
+  };
 
-    Modal.confirm({
-      title: '',
-      content: <div>请输入连接密码</div>,
-      onOk: async () => {
-        window.remoteWs = window.socketClient.connect(`ws://${wsServer}:9550`);
+  actionReflushPwd = () => {
+    let password = window.utools.db.get<RDP.Password>(
+      `${window.deviceId}/currentPwd`,
+    );
+    password.password = this.actionGeneratePwd();
+    window.utools.db.put(password);
+    this.setState(
+      {
+        currentPwd: password,
       },
-    });
+      () => message.success('更新成功'),
+    );
+  };
+
+  actionInitPreConnection = async (wsServer: string) => {
+    history.push('/remote');
+
+    // Modal.confirm({
+    //   title: '',
+    //   content: <div>请输入连接密码</div>,
+    //   onOk: async () => {
+    //     window.remoteWs = window.socketClient.connect(`ws://${wsServer}:9550`);
+    //   },
+    // });
+  };
+
+  actionCopyIpAddress = (ip: string) => {
+    if (copy(ip)) {
+      message.success('复制成功');
+    }
   };
 
   public render() {
-    const { ipAddress, showPwd } = this.state;
+    const { ipAddress, showPwd, currentPwd } = this.state;
 
     return (
       <div className={styles.contentBox}>
@@ -75,6 +112,9 @@ export default class Index extends React.Component<any, IState> {
                     allowClear
                     placeholder="远程设备地址"
                     style={{ width: '100%' }}
+                    onSearch={() =>
+                      this.actionInitPreConnection('192.168.2.221')
+                    }
                   />
                 </AutoComplete>
               </div>
@@ -86,9 +126,12 @@ export default class Index extends React.Component<any, IState> {
               <div className={styles.title}>设备地址</div>
               <div className={styles.ipAddress}>
                 {ipAddress.map((ip) => (
-                  <div className={styles.ip}>
+                  <div className={styles.ip} key={ip}>
                     {ip}
-                    <span className={styles.copy}>
+                    <span
+                      className={styles.copy}
+                      onClick={() => this.actionCopyIpAddress(ip)}
+                    >
                       <CopyOutlined />
                     </span>
                   </div>
@@ -98,7 +141,11 @@ export default class Index extends React.Component<any, IState> {
             <div className={styles.infoBlock}>
               <div className={styles.title}>动态密码</div>
               <div className={styles.password}>
-                {showPwd ? '123123' : '******'}
+                {showPwd ? (
+                  <span className={styles.pwdBox}>{currentPwd?.password}</span>
+                ) : (
+                  '******'
+                )}
                 <span onClick={() => this.setState({ showPwd: !showPwd })}>
                   {showPwd ? (
                     <EyeOutlined className={styles.showPwd} />
@@ -108,7 +155,19 @@ export default class Index extends React.Component<any, IState> {
                 </span>
               </div>
               <div className={styles.btnEdit}>
-                <Button size="small" type="primary">
+                <Button
+                  size="small"
+                  type="primary"
+                  onClick={() =>
+                    Modal.confirm({
+                      title: '提示',
+                      content: '是否确认更新本机动态密码',
+                      onOk: this.actionReflushPwd,
+                      okText: '确认',
+                      cancelText: '取消',
+                    })
+                  }
+                >
                   更新密码
                 </Button>
               </div>

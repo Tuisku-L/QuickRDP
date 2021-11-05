@@ -8,7 +8,7 @@ export default class Index extends React.Component<any, IState> {
   imgRef: HTMLCanvasElement | null = null;
   imgContext: CanvasRenderingContext2D | null = null;
   videoRef: HTMLVideoElement | null = null;
-  remoteWs: any = null;
+  remoteWs: typeof window.socketLocal | null = null;
 
   constructor(props: any) {
     super(props);
@@ -19,7 +19,7 @@ export default class Index extends React.Component<any, IState> {
 
   componentDidMount = async () => {
     console.info('123123');
-    await this.actionInitRemote('ws://192.168.2.221:9550');
+    await this.actionInitRemote('192.168.2.221');
   };
 
   actionInitRemote = async (wsServer: string) => {
@@ -27,16 +27,20 @@ export default class Index extends React.Component<any, IState> {
       iceServers: [],
     };
     const conn = new RTCPeerConnection(config);
-    window.conn = conn;
 
-    this.remoteWs = window.remoteWs;
+    this.remoteWs = window.socketClient.connect(`ws://${wsServer}:9550`);
 
     conn.onicecandidate = (e) => {
       console.info('e', e);
       if (e.candidate) {
         console.info('e.candidate', e.candidate);
         conn.addIceCandidate(new RTCIceCandidate(e.candidate));
-        this.remoteWs.emit('rdp_answer_cecandidate', e.candidate);
+        if (this.remoteWs) {
+          this.remoteWs.emit('rdp_answer_cecandidate', {
+            deviceId: window.deviceId,
+            data: e.candidate,
+          });
+        }
       }
     };
 
@@ -48,18 +52,32 @@ export default class Index extends React.Component<any, IState> {
       }
     };
 
-    this.remoteWs.emit('rdp_connection_ready', {});
+    const user = window.utools.getUser();
 
-    this.remoteWs.on('rdp_webrtc_offer', async (offer) => {
-      conn.setRemoteDescription(offer);
-      const answer = await conn.createAnswer();
-      conn.setLocalDescription(answer);
-      this.remoteWs.emit('rdp_webrtc_answer', answer);
+    this.remoteWs!.emit('rdp_pre_connection', {
+      deviceId: window.deviceId,
+      data: {
+        userHash: user?.avatar,
+      },
     });
 
-    this.remoteWs.on('rdp_offer_cecandidate', async (data) => {
-      console.info('get rdp_offer_cecandidate');
-      conn.addIceCandidate(data);
+    this.remoteWs!.on('rdp_webrtc_offer', async (offer) => {
+      if (offer.deviceId !== window.deviceId) {
+        conn.setRemoteDescription(offer.data);
+        const answer = await conn.createAnswer();
+        conn.setLocalDescription(answer);
+        this.remoteWs!.emit('rdp_webrtc_answer', {
+          deviceId: window.deviceId,
+          data: answer,
+        });
+      }
+    });
+
+    this.remoteWs!.on('rdp_offer_cecandidate', (data) => {
+      if (data.deviceId !== window.deviceId) {
+        console.info('get rdp_offer_cecandidate');
+        conn.addIceCandidate(data.data);
+      }
     });
   };
 
@@ -67,7 +85,10 @@ export default class Index extends React.Component<any, IState> {
     console.info('x: ', event.clientX, 'y: ', event.clientY);
     const { clientX, clientY } = event;
     if (this.remoteWs) {
-      this.remoteWs.emit('rdp_event_click', { x: clientX, y: clientY });
+      this.remoteWs.emit('rdp_event_click', {
+        deviceId: window.deviceId,
+        data: { x: clientX, y: clientY },
+      });
     }
   };
 

@@ -6,6 +6,9 @@ namespace RDP {
     savePwd: boolean;
     selfConnect: boolean;
   }
+  export interface Password extends utools.db.DbObject {
+    password: string;
+  }
 
   export interface DisplayInfo {
     id: string | number;

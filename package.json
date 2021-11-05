@@ -24,6 +24,7 @@
     "@types/screenshot-desktop": "^1.12.0",
     "@umijs/preset-react": "1.x",
     "antd": "^4.15.0",
+    "iclipboard": "^1.0.1",
     "linq": "^3.2.3",
     "screenshot-desktop": "^1.12.7",
     "socket.io": "^4.3.1",

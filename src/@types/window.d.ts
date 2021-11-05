@@ -12,9 +12,16 @@ declare global {
     os: any;
     socketClient: any;
     socketServer: any;
-    socketLocal: any;
+    socketLocal: {
+      on: (
+        name: string,
+        callback: (data: { deviceId: string; data: any }) => any,
+      ) => {};
+      emit: Function;
+    };
     desktopCapturer: any;
     displaysInfo: Array<RDP.DisplayInfo>;
     remoteWs: any;
+    deviceId: string;
   }
 }

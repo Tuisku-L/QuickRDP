@@ -12,6 +12,7 @@ interface IState {
     type: 'member' | 'user';
   } | null;
   activePage: 'index' | 'setting';
+  isInit: boolean;
 }
 
 export default class Index extends React.Component<any, IState> {
@@ -20,6 +21,7 @@ export default class Index extends React.Component<any, IState> {
     this.state = {
       userInfo: null,
       activePage: 'index',
+      isInit: false,
     };
   }
 
@@ -33,7 +35,35 @@ export default class Index extends React.Component<any, IState> {
 
     this.actionInitSetting();
     this.actionInitRemoteWebRTC();
+    this.actionInitPwd();
+
+    this.setState({
+      isInit: true,
+    });
   }
+
+  actionInitPwd = () => {
+    let password = window.utools.db.get<RDP.Password>(
+      `${window.deviceId}/currentPwd`,
+    );
+    if (!password) {
+      password = {
+        _id: `${window.deviceId}/currentPwd`,
+        password: Math.floor(
+          Math.random() * (999999 - 100000 + 1) + 100000,
+        ).toString(),
+      };
+      window.utools.db.put(password);
+    } else {
+      const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
+      if (setting.changePwd === 'onBoot') {
+        password.password = Math.floor(
+          Math.random() * (999999 - 100000 + 1) + 100000,
+        ).toString();
+        window.utools.db.put(password);
+      }
+    }
+  };
 
   actionInitSetting = () => {
     const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
@@ -62,7 +92,10 @@ export default class Index extends React.Component<any, IState> {
       if (e.candidate) {
         console.info('e.candidate', e.candidate);
         // conn.addIceCandidate(new RTCIceCandidate(e.candidate));
-        window.socketLocal.emit('rdp_offer_cecandidate', e.candidate);
+        window.socketLocal.emit('rdp_offer_cecandidate', {
+          deviceId: window.deviceId,
+          data: e.candidate,
+        });
       }
     };
 
@@ -73,28 +106,65 @@ export default class Index extends React.Component<any, IState> {
     window.socketLocal = window.socketClient.connect('ws://localhost:9550');
 
     window.socketLocal.on('rdp_pre_connection', async (data) => {
-      const offer = await conn.createOffer();
-      conn.setLocalDescription(offer);
-      console.info('生成 offer', offer);
-      window.socketLocal.emit('rdp_webrtc_offer', offer);
+      if (data.deviceId !== window.deviceId) {
+        const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
+        const user = window.utools.getUser();
+
+        if (data.data.userHash && data.data.userHash !== '') {
+          if (setting.selfConnect && data.data.userHash === user?.avatar) {
+            window.socketLocal.emit('rdp_verify_type', {
+              deviceId: window.deviceId,
+              data: { verifyType: 'none' },
+            });
+            return;
+          }
+        }
+
+        window.socketLocal.emit('rdp_verify_type', {
+          deviceId: window.deviceId,
+          data: { verifyType: 'password' },
+        });
+      }
     });
 
-    window.socketLocal.on('rdp_webrtc_answer', async (answer) => {
-      conn.setRemoteDescription(answer);
+    window.socketLocal.on('rdp_verification', async (data) => {
+      if (data.deviceId !== window.deviceId) {
+        const pwd = data.data.pwd;
+        const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
+        const personalPwd = setting.personalPwd;
+      }
     });
 
-    window.socketLocal.on('rdp_answer_cecandidate', async (data) => {
+    window.socketLocal.on('rdp_connection_ready', async (data) => {
+      if (data.deviceId !== window.deviceId) {
+        const offer = await conn.createOffer();
+        conn.setLocalDescription(offer);
+        console.info('生成 offer', offer);
+        window.socketLocal.emit('rdp_webrtc_offer', {
+          deviceId: window.deviceId,
+          data: offer,
+        });
+      }
+    });
+
+    window.socketLocal.on('rdp_webrtc_answer', (data) => {
+      if (data.deviceId !== window.deviceId) {
+        conn.setRemoteDescription(data.data);
+      }
+    });
+
+    window.socketLocal.on('rdp_answer_cecandidate', (data) => {
       console.info('get rdp_answer_cecandidate');
-      conn.addIceCandidate(data);
+      if (data.deviceId !== window.deviceId) {
+        conn.addIceCandidate(data.data);
+      }
     });
 
-    window.socketLocal.on(
-      'rdp_event_click',
-      (event: { x: number; y: number }) => {
-        console.info('rdp_event_click', event);
-        window.utools.simulateMouseClick(event.x, event.y);
-      },
-    );
+    window.socketLocal.on('rdp_event_click', (data) => {
+      if (data.deviceId !== window.deviceId) {
+        window.utools.simulateMouseClick(data.data.x, data.data.y);
+      }
+    });
   };
 
   actionGetDisplayStream = async () => {
@@ -140,7 +210,7 @@ export default class Index extends React.Component<any, IState> {
   };
 
   public render() {
-    const { userInfo, activePage } = this.state;
+    const { userInfo, activePage, isInit } = this.state;
 
     return (
       <div
@@ -192,7 +262,7 @@ export default class Index extends React.Component<any, IState> {
             </div>
           </Col>
           <Col span={18} className={styles.mainInfo}>
-            {this.props.children}
+            {isInit && this.props.children}
           </Col>
         </Row>
       </div>
