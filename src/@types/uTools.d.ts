@@ -15,6 +15,7 @@ declare namespace utools {
     export function isMacOs(): boolean;
     export function isWindows(): boolean;
     export function isLinux(): boolean;
+    export function isDev(): boolean;
 
     export function simulateMouseClick(x: number, y: number): void;
     export function simulateMouseDoubleClick(x: number, y: number): void;

@@ -209,10 +209,23 @@ export default class Index extends React.Component<any, IState> {
   actionOpenRemoteWindow = (remoteIp: string, displayInfo: Array<RDP.DisplayInfo>) => {
     console.info("login success", displayInfo);
     const remoteWindow = window.utools.createBrowserWindow("dev.html", {
+      show: false,
+      title: `QuickRDP - ${remoteIp}`,
       webPreferences: {
         preload: "remote_preload.js"
       }
-    }, () => { remoteWindow.webContents.openDevTools() })
+    }, () => {
+      if (window.utools.isDev()) {
+        remoteWindow.webContents.openDevTools()
+      }
+      remoteWindow.maximize();
+      remoteWindow.show();
+      console.info("remoteWindow.webContents.id", remoteWindow.webContents.id);
+      window.ipcRenderer.sendTo(remoteWindow.webContents.id, 'ping', {
+        remoteIp,
+        displayInfo
+      })
+    })
   }
 
   actionCopyIpAddress = (ip: string) => {

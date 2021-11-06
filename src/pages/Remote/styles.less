@@ -1,0 +1,28 @@
+.remoteBox {
+  position: relative;
+
+  .toolsLine {
+    width: max-content;
+    position: fixed;
+    margin: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    text-align: center;
+    transition: all .3s ease;
+
+    &.hidden {
+      top: -27px;
+    }
+
+    .hiddenBtn {
+      display: inline-block;
+      transform: rotate(270deg);
+    }
+  }
+
+  .remoteVideo {
+    z-index: 10;
+  }
+}

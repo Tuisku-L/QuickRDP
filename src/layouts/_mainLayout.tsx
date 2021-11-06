@@ -85,7 +85,7 @@ export default class Index extends React.Component<any, IState> {
     const config = {
       iceServers: [],
     };
-    const conn = new RTCPeerConnection(config);
+    let conn = new RTCPeerConnection(config);
 
     conn.onicecandidate = (e) => {
       console.info('e', e);
@@ -104,6 +104,15 @@ export default class Index extends React.Component<any, IState> {
     conn.addStream(stream);
 
     window.socketLocal = window.socketClient.connect('ws://localhost:9550');
+
+    window.socketLocal.on("rdp_disconnection", (data) => {
+      if (data.deviceId !== window.deviceId) {
+        window.socketLocal.disconnect();
+        window.socketLocal = null;
+        conn = null;
+        this.actionInitRemoteWebRTC();
+      }
+    });
 
     window.socketLocal.on('rdp_pre_connection', (data) => {
       console.info("datadatadatadatav", data);

@@ -1,7 +1,24 @@
 import React from 'react';
 
+import { Button, Dropdown, Menu } from "antd";
+import {
+  FullscreenOutlined,
+  FullscreenExitOutlined,
+  DesktopOutlined,
+  CloseSquareOutlined,
+  DownOutlined,
+  DoubleRightOutlined
+} from "@ant-design/icons";
+
+import styles from "./styles.less";
+
 interface IState {
   sdImg: string;
+  isFull: boolean;
+  hasMultipleScreen: boolean;
+  currentScreen: string;
+  hiddenTools: boolean;
+  isToggle: boolean;
 }
 
 export default class Index extends React.Component<any, IState> {
@@ -14,12 +31,21 @@ export default class Index extends React.Component<any, IState> {
     super(props);
     this.state = {
       sdImg: '',
+      isFull: false,
+      hasMultipleScreen: true,
+      currentScreen: "屏幕 1",
+      hiddenTools: false,
+      isToggle: false
     };
   }
 
   componentDidMount = async () => {
     console.info('123123');
-    await this.actionInitRemote('192.168.60.100');
+
+    window.ipcRenderer.on('ping', async (_: any, data: { remoteIp: string; displayInfo: RDP.DisplayInfo[] }) => {
+      const { remoteIp, displayInfo } = data;
+      await this.actionInitRemote(remoteIp);
+    })
   };
 
   actionInitRemote = async (wsServer: string) => {
@@ -78,6 +104,16 @@ export default class Index extends React.Component<any, IState> {
     });
   };
 
+  actionDisconnection = () => {
+    this.remoteWs?.emit("rdp_disconnection", {
+      deviceId: window.deviceId,
+      data: {}
+    });
+    setTimeout(() => {
+      window.close();
+    }, 1000);
+  }
+
   actionOnClick = (event: React.MouseEvent<HTMLVideoElement, MouseEvent>) => {
     console.info('x: ', event.pageX, 'y: ', event.pageY);
     const { pageX, pageY } = event;
@@ -89,16 +125,92 @@ export default class Index extends React.Component<any, IState> {
     }
   };
 
+  actionClickTools = (event: React.MouseEvent<HTMLElement, MouseEvent>, func: Function) => {
+    event.stopPropagation();
+    func();
+  }
+
+  actionHoverTools = () => {
+    if (!this.state.isToggle) {
+      this.setState({
+        hiddenTools: false,
+      });
+    }
+  }
+
   public render() {
+    const { isFull, hasMultipleScreen, currentScreen, hiddenTools } = this.state;
+
     return (
-      <div>
-        <div>
-          <video
-            autoPlay
-            onClick={this.actionOnClick}
-            ref={(ref) => (this.videoRef = ref)}
-          />
+      <div className={styles.remoteBox}>
+        <div
+          className={`${styles.toolsLine}${hiddenTools ? ` ${styles.hidden}` : ""}`}
+          onMouseEnter={this.actionHoverTools}
+        >
+          <div className={styles.toolsBox}>
+            <Button.Group>
+              <Button
+                type="primary"
+                danger
+                onClick={this.actionDisconnection}
+              >
+                <CloseSquareOutlined /> 结束连接
+              </Button>
+              <Button type="primary" onClick={() => {
+                if (isFull) {
+                  this.setState({
+                    isFull: false
+                  });
+                  document.exitFullscreen();
+                } else {
+                  this.setState({
+                    isFull: true
+                  });
+                  document.documentElement.requestFullscreen();
+                }
+              }}>
+                {
+                  !isFull ?
+                    <span>
+                      <FullscreenOutlined /> 进入全屏
+                    </span> :
+                    <span>
+                      <FullscreenExitOutlined /> 退出全屏
+                    </span>
+                }
+              </Button>
+              {
+                hasMultipleScreen &&
+                <Dropdown
+                  overlay={<Menu>
+                    <Menu.Item key="1">
+                      1st menu item
+                    </Menu.Item>
+                    <Menu.Item key="2">
+                      2nd menu item
+                    </Menu.Item>
+                    <Menu.Item key="3">
+                      3rd menu item
+                    </Menu.Item>
+                  </Menu>}
+                >
+                  <Button type="primary">
+                    <DesktopOutlined /> {currentScreen} <DownOutlined />
+                  </Button>
+                </Dropdown>
+              }
+              <Button type="primary" onClick={() => this.setState({ hiddenTools: true })}>
+                <span className={styles.hiddenBtn}><DoubleRightOutlined /></span>&nbsp;隐藏
+              </Button>
+            </Button.Group>
+          </div>
         </div>
+        <video
+          autoPlay
+          onClick={this.actionOnClick}
+          ref={(ref) => (this.videoRef = ref)}
+          className={styles.remoteVideo}
+        />
       </div>
     );
   }

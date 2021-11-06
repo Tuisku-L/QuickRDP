@@ -1,7 +1,7 @@
 const process = require('child_process');
 const fs = require('fs');
 const os = require('os');
-const { desktopCapturer } = require('electron');
+const { desktopCapturer, ipcRenderer } = require('electron');
 
 const deviceId = utools.getNativeId();
 
@@ -12,6 +12,7 @@ window.__dirname = __dirname.replace(/\s+/g, '\\ ');
 window.fs = fs;
 window.os = os;
 window.desktopCapturer = desktopCapturer;
+window.ipcRenderer = ipcRenderer;
 
 const socket = require('socket.io')(9550);
 window.socketServer = null;
@@ -95,10 +96,8 @@ socket.on('connection', (socketServer) => {
     socketServer.broadcast.emit('rdp_verify_type', data);
   });
 
-  socketServer.on('rdp_disconnection', () => {
-    console.info('收到远程桌面关闭请求');
-    if (client != null) {
-      window.socketLocal.disconnect();
-    }
+  socketServer.on('rdp_disconnection', (data) => {
+    console.info('收到远程桌面 rdp_disconnection 请求', data);
+    socketServer.broadcast.emit('rdp_disconnection', data);
   });
 });

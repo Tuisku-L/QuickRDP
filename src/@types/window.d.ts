@@ -24,5 +24,6 @@ declare global {
     displaysInfo: Array<RDP.DisplayInfo>;
     remoteWs: any;
     deviceId: string;
+    ipcRenderer: any;
   }
 }
