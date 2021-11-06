@@ -55,7 +55,7 @@ export default class Index extends React.Component<any, IState> {
       };
       window.utools.db.put(password);
     } else {
-      const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
+      const setting = window.utools.db.get<RDP.Setting>(`${window.deviceId}/rdp_setting`);
       if (setting.changePwd === 'onBoot') {
         password.password = Math.floor(
           Math.random() * (999999 - 100000 + 1) + 100000,
@@ -66,10 +66,10 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionInitSetting = () => {
-    const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
+    const setting = window.utools.db.get<RDP.Setting>(`${window.deviceId}/rdp_setting`);
     if (!setting) {
       const defaultSetting: RDP.Setting = {
-        _id: 'rdp_setting',
+        _id: `${window.deviceId}/rdp_setting`,
         vaildType: 'temp',
         personalPwd: '',
         changePwd: 'none',
@@ -108,7 +108,7 @@ export default class Index extends React.Component<any, IState> {
     window.socketLocal.on('rdp_pre_connection', (data) => {
       console.info("datadatadatadatav", data);
       if (data.deviceId !== window.deviceId) {
-        const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
+        const setting = window.utools.db.get<RDP.Setting>(`${window.deviceId}/rdp_setting`);
         const user = window.utools.getUser();
 
         if (data.data.userHash && data.data.userHash !== '') {
@@ -135,7 +135,7 @@ export default class Index extends React.Component<any, IState> {
     window.socketLocal.on('rdp_login_try', async (data) => {
       if (data.deviceId !== window.deviceId) {
         const pwd = data.data.password;
-        const setting = window.utools.db.get<RDP.Setting>('rdp_setting');
+        const setting = window.utools.db.get<RDP.Setting>(`${window.deviceId}/rdp_setting`);
         const user = window.utools.getUser();
 
         const personalPwd = setting.personalPwd;

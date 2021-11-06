@@ -2,7 +2,7 @@ import React from 'react';
 import { history } from 'umi';
 import { copy } from 'iclipboard';
 
-import { Button, Input, AutoComplete, Modal, message } from 'antd';
+import { Button, Input, AutoComplete, Modal, message, Spin } from 'antd';
 import {
   CopyOutlined,
   EyeOutlined,
@@ -17,6 +17,8 @@ interface IState {
   showPwd: boolean;
   currentPwd: RDP.Password | null;
   remoteIpAddress: string;
+  historyList: Array<string>;
+  isTryConnect: boolean;
 }
 
 export default class Index extends React.Component<any, IState> {
@@ -27,7 +29,9 @@ export default class Index extends React.Component<any, IState> {
       ipAddress: [],
       showPwd: true,
       currentPwd: null,
-      remoteIpAddress: ""
+      remoteIpAddress: "",
+      historyList: [],
+      isTryConnect: false
     };
   }
 
@@ -48,6 +52,7 @@ export default class Index extends React.Component<any, IState> {
     this.setState({
       ipAddress,
     });
+
     let password = window.utools.db.get<RDP.Password>(
       `${window.deviceId}/currentPwd`,
     );
@@ -55,6 +60,21 @@ export default class Index extends React.Component<any, IState> {
     this.setState({
       currentPwd: password,
     });
+
+    const historyList = window.utools.db.get<RDP.HistoryList>(
+      `${window.deviceId}/historyList`,
+    );
+    if (historyList) {
+      this.setState({
+        historyList: historyList.list
+      });
+    } else {
+      const initList: RDP.HistoryList = {
+        _id: `${window.deviceId}/historyList`,
+        list: []
+      };
+      window.utools.db.put(initList);
+    }
   }
 
   actionGeneratePwd = () => {
@@ -78,7 +98,45 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionInitPreConnection = async (wsServer: string) => {
+    if (!wsServer || wsServer.trim() === "") {
+      message.warning("请输入远程设备地址");
+      return;
+    }
+    const historyList = window.utools.db.get<RDP.HistoryList>(
+      `${window.deviceId}/historyList`,
+    );
+
+    if (historyList) {
+      historyList.list.unshift(wsServer);
+      historyList.list = Array.from(new Set(historyList.list));
+      historyList.list.splice(5);
+      this.setState({
+        historyList: historyList.list
+      });
+      window.utools.db.put(historyList);
+    }
+
+    this.setState({
+      isTryConnect: true
+    });
+
     let remoteWs: typeof window.socketLocal | null = window.socketClient.connect(`ws://${wsServer}:9550`);
+
+    const timeout = setTimeout(() => {
+      Modal.warning({
+        title: "提示",
+        content: "远程设备无响应，请检查远程设备地址或网络设置",
+        okText: "确认",
+      });
+      remoteWs?.disconnect();
+      remoteWs = null;
+      message.destroy();
+      this.setState({
+        isTryConnect: false
+      });
+    }, 1000 * 5);
+
+    message.warning("连接中...", 5000);
 
     const user = window.utools.getUser();
 
@@ -91,6 +149,11 @@ export default class Index extends React.Component<any, IState> {
 
     remoteWs!.on("rdp_remote_info", (data) => {
       if (data.deviceId !== window.deviceId) {
+        clearTimeout(timeout);
+        message.destroy();
+        this.setState({
+          isTryConnect: false
+        });
         if (data.data.verifyType === "none") {
           this.actionOpenRemoteWindow(wsServer, data.data.displayInfo);
         } else {
@@ -159,7 +222,7 @@ export default class Index extends React.Component<any, IState> {
   };
 
   public render() {
-    const { ipAddress, showPwd, currentPwd, remoteIpAddress } = this.state;
+    const { ipAddress, showPwd, currentPwd, remoteIpAddress, historyList, isTryConnect } = this.state;
 
     return (
       <div className={styles.contentBox}>
@@ -168,22 +231,26 @@ export default class Index extends React.Component<any, IState> {
             <h1 className={styles.topTitle}>连接远程设备</h1>
             <div className={styles.infoBlock}>
               <div style={{ width: '100%' }}>
-                <AutoComplete
-                  options={[{ value: '192.168.2.221', label: '192.168.2.221' }]}
-                  style={{ width: '100%' }}
-                >
-                  <Input.Search
-                    enterButton="连接"
-                    size="large"
-                    allowClear
-                    placeholder="远程设备地址"
-                    style={{ width: '100%' }}
-                    onChange={e => this.setState({ remoteIpAddress: e.target.value })}
-                    onSearch={() =>
-                      this.actionInitPreConnection(remoteIpAddress)
+                <Spin spinning={isTryConnect}>
+                  <AutoComplete
+                    options={
+                      historyList.map(x => { return { value: x, label: x } })
                     }
-                  />
-                </AutoComplete>
+                    style={{ width: '100%' }}
+                    allowClear
+                  >
+                    <Input.Search
+                      enterButton="连接"
+                      size="large"
+                      placeholder="远程设备地址"
+                      style={{ width: '100%' }}
+                      onChange={e => { this.setState({ remoteIpAddress: e.target.value }) }}
+                      onSearch={(e) =>
+                        this.actionInitPreConnection(e)
+                      }
+                    />
+                  </AutoComplete>
+                </Spin>
               </div>
             </div>
           </div>

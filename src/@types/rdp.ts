@@ -18,4 +18,8 @@ namespace RDP {
       height: number;
     };
   }
+
+  export interface HistoryList extends utools.db.DbObject {
+    list: Array<string>;
+  }
 }

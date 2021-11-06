@@ -19,7 +19,7 @@ export default class Index extends React.Component<any, IState> {
     }
 
     componentDidMount() {
-        const setting = window.utools.db.get<RDP.Setting>("rdp_setting");
+        const setting = window.utools.db.get<RDP.Setting>(`${window.deviceId}/rdp_setting`);
         console.info("setting", setting);
         this.setState({
             setting,
@@ -30,7 +30,7 @@ export default class Index extends React.Component<any, IState> {
 
     actionSaveSetting = (values: RDP.Setting) => {
         const { setting } = this.state;
-        values["_id"] = "rdp_setting";
+        values["_id"] = `${window.deviceId}/rdp_setting`;
         values["_rev"] = setting?._rev;
         console.info("values", values);
         window.utools.db.put(values);
