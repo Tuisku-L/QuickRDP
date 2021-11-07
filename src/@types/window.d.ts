@@ -25,5 +25,6 @@ declare global {
     remoteWs: any;
     deviceId: string;
     ipcRenderer: any;
+    initDev: Function;
   }
 }

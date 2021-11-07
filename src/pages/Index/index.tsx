@@ -29,9 +29,9 @@ export default class Index extends React.Component<any, IState> {
       ipAddress: [],
       showPwd: true,
       currentPwd: null,
-      remoteIpAddress: "",
+      remoteIpAddress: '',
       historyList: [],
-      isTryConnect: false
+      isTryConnect: false,
     };
   }
 
@@ -66,12 +66,12 @@ export default class Index extends React.Component<any, IState> {
     );
     if (historyList) {
       this.setState({
-        historyList: historyList.list
+        historyList: historyList.list,
       });
     } else {
       const initList: RDP.HistoryList = {
         _id: `${window.deviceId}/historyList`,
-        list: []
+        list: [],
       };
       window.utools.db.put(initList);
     }
@@ -98,10 +98,16 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionInitPreConnection = async (wsServer: string) => {
-    if (!wsServer || wsServer.trim() === "") {
-      message.warning("请输入远程设备地址");
+    if (!wsServer || wsServer.trim() === '') {
+      message.warning('请输入远程设备地址');
       return;
     }
+
+    if (wsServer === 'devtools') {
+      window.initDev();
+      return;
+    }
+
     const historyList = window.utools.db.get<RDP.HistoryList>(
       `${window.deviceId}/historyList`,
     );
@@ -111,32 +117,33 @@ export default class Index extends React.Component<any, IState> {
       historyList.list = Array.from(new Set(historyList.list));
       historyList.list.splice(5);
       this.setState({
-        historyList: historyList.list
+        historyList: historyList.list,
       });
       window.utools.db.put(historyList);
     }
 
     this.setState({
-      isTryConnect: true
+      isTryConnect: true,
     });
 
-    let remoteWs: typeof window.socketLocal | null = window.socketClient.connect(`ws://${wsServer}:9550`);
+    let remoteWs: typeof window.socketLocal | null =
+      window.socketClient.connect(`ws://${wsServer}:9550`);
 
     const timeout = setTimeout(() => {
       Modal.warning({
-        title: "提示",
-        content: "远程设备无响应，请检查远程设备地址或网络设置",
-        okText: "确认",
+        title: '提示',
+        content: '远程设备无响应，请检查远程设备地址或网络设置',
+        okText: '确认',
       });
       remoteWs?.disconnect();
       remoteWs = null;
       message.destroy();
       this.setState({
-        isTryConnect: false
+        isTryConnect: false,
       });
     }, 1000 * 5);
 
-    message.warning("连接中...", 5000);
+    message.warning('连接中...', 5000);
 
     const user = window.utools.getUser();
 
@@ -147,30 +154,36 @@ export default class Index extends React.Component<any, IState> {
       },
     });
 
-    remoteWs!.on("rdp_remote_info", (data) => {
+    remoteWs!.on('rdp_remote_info', (data) => {
       if (data.deviceId !== window.deviceId) {
         clearTimeout(timeout);
         message.destroy();
         this.setState({
-          isTryConnect: false
+          isTryConnect: false,
         });
-        if (data.data.verifyType === "none") {
+        if (data.data.verifyType === 'none') {
+          remoteWs!.disconnect();
+          remoteWs = null;
           this.actionOpenRemoteWindow(wsServer, data.data.displayInfo);
         } else {
           Modal.confirm({
             title: '',
-            content: <div>
-              <div>请输入连接密码</div>
-              <div><Input ref={ref => this.pwdInput = ref} /></div>
-            </div>,
+            content: (
+              <div>
+                <div>请输入连接密码</div>
+                <div>
+                  <Input ref={(ref) => (this.pwdInput = ref)} />
+                </div>
+              </div>
+            ),
             onOk: () => {
               if (this.pwdInput) {
                 const password = this.pwdInput.state.value;
-                remoteWs!.emit("rdp_login_try", {
+                remoteWs!.emit('rdp_login_try', {
                   deviceId: window.deviceId,
                   data: {
-                    password
-                  }
+                    password,
+                  },
                 });
               }
             },
@@ -178,14 +191,15 @@ export default class Index extends React.Component<any, IState> {
               remoteWs!.disconnect();
               remoteWs = null;
             },
-            okText: "连接",
-            cancelText: "取消"
+            okText: '连接',
+            cancelText: '取消',
           });
         }
       }
     });
 
-    remoteWs!.on("rdp_login_success", data => {
+    remoteWs!.on('rdp_login_success', (data) => {
+      console.info('data', data);
       if (data.deviceId !== window.deviceId) {
         const displayInfo = data.data;
         remoteWs!.disconnect();
@@ -194,11 +208,11 @@ export default class Index extends React.Component<any, IState> {
       }
     });
 
-    remoteWs!.on("rdp_login_faild", data => {
+    remoteWs!.on('rdp_login_faild', (data) => {
       if (data.deviceId !== window.deviceId) {
         Modal.warning({
-          title: "连接失败",
-          content: data.data
+          title: '连接失败',
+          content: data.data,
         });
         remoteWs!.disconnect();
         remoteWs = null;
@@ -206,27 +220,37 @@ export default class Index extends React.Component<any, IState> {
     });
   };
 
-  actionOpenRemoteWindow = (remoteIp: string, displayInfo: Array<RDP.DisplayInfo>) => {
-    console.info("login success", displayInfo);
-    const remoteWindow = window.utools.createBrowserWindow("dev.html", {
-      show: false,
-      title: `QuickRDP - ${remoteIp}`,
-      webPreferences: {
-        preload: "remote_preload.js"
-      }
-    }, () => {
-      if (window.utools.isDev()) {
-        remoteWindow.webContents.openDevTools()
-      }
-      remoteWindow.maximize();
-      remoteWindow.show();
-      console.info("remoteWindow.webContents.id", remoteWindow.webContents.id);
-      window.ipcRenderer.sendTo(remoteWindow.webContents.id, 'ping', {
-        remoteIp,
-        displayInfo
-      })
-    })
-  }
+  actionOpenRemoteWindow = (
+    remoteIp: string,
+    displayInfo: Array<RDP.DisplayInfo>,
+  ) => {
+    console.info('login success', displayInfo);
+    const remoteWindow = window.utools.createBrowserWindow(
+      'remote.html',
+      {
+        show: false,
+        title: `QuickRDP - ${remoteIp}`,
+        webPreferences: {
+          preload: './lib/remote_preload.js',
+        },
+      },
+      () => {
+        if (window.utools.isDev()) {
+          remoteWindow.webContents.openDevTools();
+        }
+        remoteWindow.maximize();
+        remoteWindow.show();
+        console.info(
+          'remoteWindow.webContents.id',
+          remoteWindow.webContents.id,
+        );
+        window.ipcRenderer.sendTo(remoteWindow.webContents.id, 'initRemote', {
+          remoteIp,
+          displayInfo,
+        });
+      },
+    );
+  };
 
   actionCopyIpAddress = (ip: string) => {
     if (copy(ip)) {
@@ -235,7 +259,14 @@ export default class Index extends React.Component<any, IState> {
   };
 
   public render() {
-    const { ipAddress, showPwd, currentPwd, remoteIpAddress, historyList, isTryConnect } = this.state;
+    const {
+      ipAddress,
+      showPwd,
+      currentPwd,
+      remoteIpAddress,
+      historyList,
+      isTryConnect,
+    } = this.state;
 
     return (
       <div className={styles.contentBox}>
@@ -246,9 +277,9 @@ export default class Index extends React.Component<any, IState> {
               <div style={{ width: '100%' }}>
                 <Spin spinning={isTryConnect}>
                   <AutoComplete
-                    options={
-                      historyList.map(x => { return { value: x, label: x } })
-                    }
+                    options={historyList.map((x) => {
+                      return { value: x, label: x };
+                    })}
                     style={{ width: '100%' }}
                     allowClear
                   >
@@ -257,10 +288,10 @@ export default class Index extends React.Component<any, IState> {
                       size="large"
                       placeholder="远程设备地址"
                       style={{ width: '100%' }}
-                      onChange={e => { this.setState({ remoteIpAddress: e.target.value }) }}
-                      onSearch={(e) =>
-                        this.actionInitPreConnection(e)
-                      }
+                      onChange={(e) => {
+                        this.setState({ remoteIpAddress: e.target.value });
+                      }}
+                      onSearch={(e) => this.actionInitPreConnection(e)}
                     />
                   </AutoComplete>
                 </Spin>

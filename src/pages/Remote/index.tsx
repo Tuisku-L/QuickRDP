@@ -1,16 +1,16 @@
 import React from 'react';
 
-import { Button, Dropdown, Menu } from "antd";
+import { Button, Dropdown, Menu } from 'antd';
 import {
   FullscreenOutlined,
   FullscreenExitOutlined,
   DesktopOutlined,
   CloseSquareOutlined,
   DownOutlined,
-  DoubleRightOutlined
-} from "@ant-design/icons";
+  DoubleRightOutlined,
+} from '@ant-design/icons';
 
-import styles from "./styles.less";
+import styles from './styles.less';
 
 interface IState {
   sdImg: string;
@@ -19,6 +19,7 @@ interface IState {
   currentScreen: string;
   hiddenTools: boolean;
   isToggle: boolean;
+  isInit: boolean;
 }
 
 export default class Index extends React.Component<any, IState> {
@@ -33,19 +34,33 @@ export default class Index extends React.Component<any, IState> {
       sdImg: '',
       isFull: false,
       hasMultipleScreen: true,
-      currentScreen: "屏幕 1",
+      currentScreen: '屏幕 1',
       hiddenTools: false,
-      isToggle: false
+      isToggle: false,
+      isInit: false,
     };
   }
 
   componentDidMount = async () => {
-    console.info('123123');
-
-    window.ipcRenderer.on('ping', async (_: any, data: { remoteIp: string; displayInfo: RDP.DisplayInfo[] }) => {
-      const { remoteIp, displayInfo } = data;
-      await this.actionInitRemote(remoteIp);
-    })
+    window.ipcRenderer.on(
+      'initRemote',
+      async (
+        _: any,
+        data: { remoteIp: string; displayInfo: RDP.DisplayInfo[] },
+      ) => {
+        const { remoteIp, displayInfo } = data;
+        const deviceId = utools.getNativeId();
+        window.deviceId = deviceId;
+        this.setState(
+          {
+            isInit: true,
+          },
+          async () => {
+            await this.actionInitRemote(remoteIp);
+          },
+        );
+      },
+    );
   };
 
   actionInitRemote = async (wsServer: string) => {
@@ -81,7 +96,7 @@ export default class Index extends React.Component<any, IState> {
     const user = window.utools.getUser();
 
     this.remoteWs!.emit('rdp_connection_ready', {
-      deviceId: window.deviceId
+      deviceId: window.deviceId,
     });
 
     this.remoteWs!.on('rdp_webrtc_offer', async (offer) => {
@@ -105,14 +120,15 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionDisconnection = () => {
-    this.remoteWs?.emit("rdp_disconnection", {
+    this.remoteWs?.emit('rdp_disconnection', {
       deviceId: window.deviceId,
-      data: {}
+      data: {},
     });
+    this.remoteWs!.disconnect();
     setTimeout(() => {
       window.close();
     }, 1000);
-  }
+  };
 
   actionOnClick = (event: React.MouseEvent<HTMLVideoElement, MouseEvent>) => {
     console.info('x: ', event.pageX, 'y: ', event.pageY);
@@ -125,10 +141,13 @@ export default class Index extends React.Component<any, IState> {
     }
   };
 
-  actionClickTools = (event: React.MouseEvent<HTMLElement, MouseEvent>, func: Function) => {
+  actionClickTools = (
+    event: React.MouseEvent<HTMLElement, MouseEvent>,
+    func: Function,
+  ) => {
     event.stopPropagation();
     func();
-  }
+  };
 
   actionHoverTools = () => {
     if (!this.state.isToggle) {
@@ -136,71 +155,78 @@ export default class Index extends React.Component<any, IState> {
         hiddenTools: false,
       });
     }
-  }
+  };
 
   public render() {
-    const { isFull, hasMultipleScreen, currentScreen, hiddenTools } = this.state;
+    const { isFull, hasMultipleScreen, currentScreen, hiddenTools, isInit } =
+      this.state;
+
+    if (!isInit) {
+      return <div>Loading..</div>;
+    }
 
     return (
       <div className={styles.remoteBox}>
         <div
-          className={`${styles.toolsLine}${hiddenTools ? ` ${styles.hidden}` : ""}`}
+          className={`${styles.toolsLine}${
+            hiddenTools ? ` ${styles.hidden}` : ''
+          }`}
           onMouseEnter={this.actionHoverTools}
         >
           <div className={styles.toolsBox}>
             <Button.Group>
-              <Button
-                type="primary"
-                danger
-                onClick={this.actionDisconnection}
-              >
+              <Button type="primary" danger onClick={this.actionDisconnection}>
                 <CloseSquareOutlined /> 结束连接
               </Button>
-              <Button type="primary" onClick={() => {
-                if (isFull) {
-                  this.setState({
-                    isFull: false
-                  });
-                  document.exitFullscreen();
-                } else {
-                  this.setState({
-                    isFull: true
-                  });
-                  document.documentElement.requestFullscreen();
-                }
-              }}>
-                {
-                  !isFull ?
-                    <span>
-                      <FullscreenOutlined /> 进入全屏
-                    </span> :
-                    <span>
-                      <FullscreenExitOutlined /> 退出全屏
-                    </span>
-                }
+              <Button
+                type="primary"
+                onClick={() => {
+                  if (isFull) {
+                    this.setState({
+                      isFull: false,
+                    });
+                    document.exitFullscreen();
+                  } else {
+                    this.setState({
+                      isFull: true,
+                    });
+                    document.documentElement.requestFullscreen();
+                  }
+                }}
+              >
+                {!isFull ? (
+                  <span>
+                    <FullscreenOutlined /> 进入全屏
+                  </span>
+                ) : (
+                  <span>
+                    <FullscreenExitOutlined /> 退出全屏
+                  </span>
+                )}
               </Button>
-              {
-                hasMultipleScreen &&
+              {hasMultipleScreen && (
                 <Dropdown
-                  overlay={<Menu>
-                    <Menu.Item key="1">
-                      1st menu item
-                    </Menu.Item>
-                    <Menu.Item key="2">
-                      2nd menu item
-                    </Menu.Item>
-                    <Menu.Item key="3">
-                      3rd menu item
-                    </Menu.Item>
-                  </Menu>}
+                  overlay={
+                    <Menu>
+                      <Menu.Item key="1">1st menu item</Menu.Item>
+                      <Menu.Item key="2">2nd menu item</Menu.Item>
+                      <Menu.Item key="3">3rd menu item</Menu.Item>
+                    </Menu>
+                  }
                 >
                   <Button type="primary">
                     <DesktopOutlined /> {currentScreen} <DownOutlined />
                   </Button>
                 </Dropdown>
-              }
-              <Button type="primary" onClick={() => this.setState({ hiddenTools: true })}>
-                <span className={styles.hiddenBtn}><DoubleRightOutlined /></span>&nbsp;隐藏
+              )}
+              <Button
+                type="primary"
+                onClick={() => this.setState({ hiddenTools: true })}
+              >
+                <span className={styles.hiddenBtn}>
+                  <DoubleRightOutlined />
+                </span>
+                &nbsp;隐藏
               </Button>
             </Button.Group>
           </div>

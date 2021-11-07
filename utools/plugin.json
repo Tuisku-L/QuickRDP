@@ -6,7 +6,7 @@
   "platform": ["win32", "darwin", "linux"],
   "logo": "logo.png",
   "author": "Wood",
-  "preload": "preload.js",
+  "preload": "./lib/preload.js",
   "homepage": "https://v2c.tech/",
   "features": [
     {
@@ -16,7 +16,7 @@
     }
   ],
   "development": {
-    "main": "http://192.168.2.221:8000/index.html"
+    "main": "http://localhost:8000/index.html"
   },
   "pluginSetting": {
     "single": false

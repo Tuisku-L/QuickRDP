@@ -1,20 +1,21 @@
 const process = require('child_process');
 const fs = require('fs');
 const os = require('os');
-const { desktopCapturer, ipcRenderer } = require('electron');
+// const {
+//   desktopCapturer,
+//   ipcRenderer
+// } = require('electron');
 
-const deviceId = utools.getNativeId();
-
-window.deviceId = deviceId;
 window.utools = utools;
 window.execShell = process;
 window.__dirname = __dirname.replace(/\s+/g, '\\ ');
 window.fs = fs;
 window.os = os;
-window.desktopCapturer = desktopCapturer;
-window.ipcRenderer = ipcRenderer;
+// window.desktopCapturer = desktopCapturer;
+// window.ipcRenderer = ipcRenderer;
 
 const socket = require('socket.io')(9550);
+console.info('socket', socket);
 window.socketServer = null;
 
 const io = require('socket.io-client');
@@ -42,19 +43,19 @@ socket.on('connection', (socketServer) => {
     // 连接本机 WS 服务器
     socketServer.broadcast.emit('rdp_login_success', data);
   });
-  
+
   socketServer.on('rdp_login_faild', (data) => {
     console.info('收到远程桌面 rdp_login_faild 请求', data);
     // 连接本机 WS 服务器
     socketServer.broadcast.emit('rdp_login_faild', data);
   });
-  
+
   socketServer.on('rdp_login_try', (data) => {
     console.info('收到远程桌面 rdp_login_try 请求', data);
     // 连接本机 WS 服务器
     socketServer.broadcast.emit('rdp_login_try', data);
   });
-  
+
   socketServer.on('rdp_pre_connection', (data) => {
     console.info('收到远程桌面预连接请求', data);
     // 连接本机 WS 服务器

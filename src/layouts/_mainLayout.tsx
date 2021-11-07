@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'umi';
 
-import { Row, Col, Avatar } from 'antd';
+import { Row, Col, Avatar, Modal } from 'antd';
 
 import styles from './styles.less';
 
@@ -26,19 +26,24 @@ export default class Index extends React.Component<any, IState> {
   }
 
   componentDidMount() {
-    const userInfo = window.utools.getUser();
-    if (userInfo) {
+    window.utools.onPluginReady(() => {
+      const deviceId = utools.getNativeId();
+      window.deviceId = deviceId;
+
+      const userInfo = window.utools.getUser();
+      if (userInfo) {
+        this.setState({
+          userInfo,
+        });
+      }
+
+      this.actionInitSetting();
+      this.actionInitRemoteWebRTC();
+      this.actionInitPwd();
+
       this.setState({
-        userInfo,
+        isInit: true,
       });
-    }
-
-    this.actionInitSetting();
-    this.actionInitRemoteWebRTC();
-    this.actionInitPwd();
-
-    this.setState({
-      isInit: true,
     });
   }
 
@@ -55,7 +60,9 @@ export default class Index extends React.Component<any, IState> {
       };
       window.utools.db.put(password);
     } else {
-      const setting = window.utools.db.get<RDP.Setting>(`${window.deviceId}/rdp_setting`);
+      const setting = window.utools.db.get<RDP.Setting>(
+        `${window.deviceId}/rdp_setting`,
+      );
       if (setting.changePwd === 'onBoot') {
         password.password = Math.floor(
           Math.random() * (999999 - 100000 + 1) + 100000,
@@ -66,7 +73,9 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionInitSetting = () => {
-    const setting = window.utools.db.get<RDP.Setting>(`${window.deviceId}/rdp_setting`);
+    const setting = window.utools.db.get<RDP.Setting>(
+      `${window.deviceId}/rdp_setting`,
+    );
     if (!setting) {
       const defaultSetting: RDP.Setting = {
         _id: `${window.deviceId}/rdp_setting`,
@@ -91,7 +100,6 @@ export default class Index extends React.Component<any, IState> {
       console.info('e', e);
       if (e.candidate) {
         console.info('e.candidate', e.candidate);
-        // conn.addIceCandidate(new RTCIceCandidate(e.candidate));
         window.socketLocal.emit('rdp_offer_cecandidate', {
           deviceId: window.deviceId,
           data: e.candidate,
@@ -105,29 +113,38 @@ export default class Index extends React.Component<any, IState> {
 
     window.socketLocal = window.socketClient.connect('ws://localhost:9550');
 
-    window.socketLocal.on("rdp_disconnection", (data) => {
+    window.socketLocal.on('rdp_disconnection', (data) => {
       if (data.deviceId !== window.deviceId) {
         window.socketLocal.disconnect();
+        // @ts-ignore
         window.socketLocal = null;
+        // @ts-ignore
         conn = null;
         this.actionInitRemoteWebRTC();
       }
     });
 
     window.socketLocal.on('rdp_pre_connection', (data) => {
-      console.info("datadatadatadatav", data);
+      console.info('rdp_pre_connection', data, window.deviceId);
       if (data.deviceId !== window.deviceId) {
-        const setting = window.utools.db.get<RDP.Setting>(`${window.deviceId}/rdp_setting`);
+        const setting = window.utools.db.get<RDP.Setting>(
+          `${window.deviceId}/rdp_setting`,
+        );
         const user = window.utools.getUser();
 
         if (data.data.userHash && data.data.userHash !== '') {
-          console.info("setting.selfConnect", setting.selfConnect, data.data.userHash, user?.avatar)
+          console.info(
+            'setting.selfConnect',
+            setting.selfConnect,
+            data.data.userHash,
+            user?.avatar,
+          );
           if (setting.selfConnect && data.data.userHash === user?.avatar) {
             window.socketLocal.emit('rdp_remote_info', {
               deviceId: window.deviceId,
               data: {
                 verifyType: 'none',
-                displayInfo: window.displaysInfo
+                displayInfo: window.displaysInfo,
               },
             });
             return;
@@ -144,11 +161,15 @@ export default class Index extends React.Component<any, IState> {
     window.socketLocal.on('rdp_login_try', async (data) => {
       if (data.deviceId !== window.deviceId) {
         const pwd = data.data.password;
-        const setting = window.utools.db.get<RDP.Setting>(`${window.deviceId}/rdp_setting`);
+        const setting = window.utools.db.get<RDP.Setting>(
+          `${window.deviceId}/rdp_setting`,
+        );
         const user = window.utools.getUser();
 
         const personalPwd = setting.personalPwd;
-        const currentPwd = window.utools.db.get<RDP.Password>(`${window.deviceId}/currentPwd`).password;
+        const currentPwd = window.utools.db.get<RDP.Password>(
+          `${window.deviceId}/currentPwd`,
+        ).password;
 
         if (setting.selfConnect) {
           if (pwd === user?.avatar) {
@@ -157,28 +178,28 @@ export default class Index extends React.Component<any, IState> {
           }
         }
 
-        if (setting.vaildType === "both") {
+        if (setting.vaildType === 'both') {
           if (personalPwd === pwd || currentPwd === pwd) {
             this.actionSendLoginSuccess();
             return;
           }
         }
 
-        if (setting.vaildType === "temp") {
+        if (setting.vaildType === 'temp') {
           if (currentPwd === pwd) {
             this.actionSendLoginSuccess();
             return;
           }
         }
 
-        if (setting.vaildType === "personal") {
+        if (setting.vaildType === 'personal') {
           if (personalPwd === pwd) {
             this.actionSendLoginSuccess();
             return;
           }
         }
 
-        this.actionSendLoginFaild("密码验证失败");
+        this.actionSendLoginFaild('密码验证失败');
       }
     });
 
@@ -215,29 +236,43 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionSendLoginSuccess = () => {
-    window.socketLocal.emit("rdp_login_success", {
+    window.socketLocal.emit('rdp_login_success', {
       deviceId: window.deviceId,
-      data: window.displaysInfo
+      data: window.displaysInfo,
     });
-  }
+  };
 
   actionSendLoginFaild = (msg: string) => {
-    window.socketLocal.emit("rdp_login_faild", {
+    window.socketLocal.emit('rdp_login_faild', {
       deviceId: window.deviceId,
-      data: msg
+      data: msg,
     });
-  }
+  };
 
   actionGetDisplayStream = async () => {
     const displays = window.utools.getAllDisplays();
+    console.info('displays', displays);
     const sources = await window.desktopCapturer.getSources({
       types: ['screen'],
     });
 
+    console.info('sources', sources);
+
     const displaysInfo = displays.map((display: any) => {
-      const displaySource = sources.find(
+      let displaySource = sources.find(
         (x: any) => x.display_id.toString() === display.id.toString(),
       );
+      if (!displaySource) {
+        if (sources.length > 0) {
+          displaySource = sources[0];
+        } else {
+          Modal.warning({
+            title: '提示',
+            content: '无法装载显示器适配文件，可能无法远程操控此设备',
+          });
+          return null;
+        }
+      }
       const displayInfo = {
         id: displaySource.id,
         display_id: displaySource.display_id,
@@ -259,7 +294,7 @@ export default class Index extends React.Component<any, IState> {
           // @ts-ignore
           mandatory: {
             chromeMediaSource: 'desktop',
-            chromeMediaSourceId: 'screen:1:0',
+            chromeMediaSourceId: displaysInfo[0].id,
           },
         },
       });
@@ -292,8 +327,9 @@ export default class Index extends React.Component<any, IState> {
                 onClick={() => this.setState({ activePage: 'index' })}
               >
                 <div
-                  className={`${styles.line}${activePage === 'index' ? ` ${styles.active}` : ''
-                    }`}
+                  className={`${styles.line}${
+                    activePage === 'index' ? ` ${styles.active}` : ''
+                  }`}
                 >
                   设备信息
                 </div>
@@ -303,16 +339,18 @@ export default class Index extends React.Component<any, IState> {
                 onClick={() => this.setState({ activePage: 'setting' })}
               >
                 <div
-                  className={`${styles.line}${activePage === 'setting' ? ` ${styles.active}` : ''
-                    }`}
+                  className={`${styles.line}${
+                    activePage === 'setting' ? ` ${styles.active}` : ''
+                  }`}
                 >
                   高级设置
                 </div>
               </Link>
               <Link to="/remote">
                 <div
-                  className={`${styles.line}${activePage === 'setting' ? ` ${styles.active}` : ''
-                    }`}
+                  className={`${styles.line}${
+                    activePage === 'setting' ? ` ${styles.active}` : ''
+                  }`}
                 >
                   test
                 </div>
