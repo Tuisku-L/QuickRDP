@@ -11,6 +11,11 @@ export default defineConfig({
       exact: true,
     },
     {
+      path: '/info',
+      component: '@/pages/Info',
+      exact: true,
+    },
+    {
       path: '/',
       component: '@/layouts/_mainLayout',
       routes: [

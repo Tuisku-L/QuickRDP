@@ -305,6 +305,33 @@ export default class Index extends React.Component<any, IState> {
     }
   };
 
+  actionShowInfo = () => {
+    const infoWindow = window.utools.createBrowserWindow(
+      'info.html',
+      {
+        width: 300,
+        height: 500,
+        resizable: false,
+        minimizable: false,
+        maximizable: false,
+        skipTaskbar: true,
+        alwaysOnTop: true,
+        transparent: true,
+        frame: false,
+        type: '',
+        webPreferences: {
+          preload: './lib/info_preload.js',
+        },
+      },
+      () => {
+        if (window.utools.isDev()) {
+          infoWindow.webContents.openDevTools();
+        }
+        window.ipcRenderer.sendTo(infoWindow.webContents.id, 'remoteInfo', {});
+      },
+    );
+  };
+
   public render() {
     const { userInfo, activePage, isInit } = this.state;
 
@@ -346,15 +373,14 @@ export default class Index extends React.Component<any, IState> {
                   高级设置
                 </div>
               </Link>
-              <Link to="/remote">
-                <div
-                  className={`${styles.line}${
-                    activePage === 'setting' ? ` ${styles.active}` : ''
-                  }`}
-                >
-                  test
-                </div>
-              </Link>
+              <div
+                className={`${styles.line}${
+                  activePage === 'setting' ? ` ${styles.active}` : ''
+                }`}
+                onClick={this.actionShowInfo}
+              >
+                test
+              </div>
             </div>
           </Col>
           <Col span={18} className={styles.mainInfo}>
