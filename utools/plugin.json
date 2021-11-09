@@ -4,7 +4,7 @@
   "main": "index.html",
   "version": "0.0.1",
   "platform": ["win32", "darwin", "linux"],
-  "logo": "logo.png",
+  "logo": "qr_logo.png",
   "author": "Wood",
   "preload": "./lib/preload.js",
   "homepage": "https://v2c.tech/",

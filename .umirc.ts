@@ -37,7 +37,7 @@ export default defineConfig({
     type: 'hash',
   },
   copy: [
-    'utools/logo.png',
+    'utools/qr_logo.png',
     'utools/plugin.json',
     'utools/remote.html',
     {

@@ -306,11 +306,15 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionShowInfo = () => {
+    const mainWindow: { size: { width: number; height: number } } =
+      window.utools.getPrimaryDisplay();
+    const x = mainWindow.size.width - 300;
+    const y = mainWindow.size.height - 300;
     const infoWindow = window.utools.createBrowserWindow(
       'info.html',
       {
         width: 300,
-        height: 500,
+        height: 300,
         resizable: false,
         minimizable: false,
         maximizable: false,
@@ -318,7 +322,8 @@ export default class Index extends React.Component<any, IState> {
         alwaysOnTop: true,
         transparent: true,
         frame: false,
-        type: '',
+        x,
+        y,
         webPreferences: {
           preload: './lib/info_preload.js',
         },
