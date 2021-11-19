@@ -180,6 +180,10 @@ export default class Index extends React.Component<any, IState> {
 
     this.actionRectifyPos();
 
+    if (this.videoRef) {
+      this.videoRef.focus();
+    }
+
     if (currentDisplayInfo) {
       const x_num = currentDisplayInfo.size.width / windowWidth;
       const y_num = currentDisplayInfo.size.height / windowHeight;
@@ -214,6 +218,17 @@ export default class Index extends React.Component<any, IState> {
           data: { x: offsetX * x_num, y: offsetY * y_num },
         });
       }
+    }
+  };
+
+  actionOnKeyPress = (e: React.KeyboardEvent<HTMLVideoElement>) => {
+    console.info('e', e);
+    e.preventDefault();
+    if (this.remoteWs) {
+      this.remoteWs.emit('rdp_event_keydown', {
+        deviceId: window.deviceId,
+        data: e.key.toLowerCase(),
+      });
     }
   };
 
@@ -344,7 +359,9 @@ export default class Index extends React.Component<any, IState> {
           className={styles.remoteVideo}
           onClick={this.actionOnClick}
           onMouseMove={this.actionOnMouseMove}
+          onKeyDown={this.actionOnKeyPress}
           style={{ cursor: isHideCursor ? 'none' : 'unset' }}
+          contentEditable
         />
       </div>
     );

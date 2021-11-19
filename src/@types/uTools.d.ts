@@ -26,6 +26,8 @@ declare namespace utools {
   export function simulateMouseMove(x: number, y: number): void;
   export function simulateMouseDoubleClick(x: number, y: number): void;
 
+  export function simulateKeyboardTap(key: string, ...args: string[]): void;
+
   export function getUser(): {
     avatar: string;
     nickname: string;

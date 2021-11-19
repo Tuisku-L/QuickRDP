@@ -18372,6 +18372,11 @@ object-assign
         socketServer.broadcast.emit('rdp_event_move', data);
       });
 
+      socketServer.on('rdp_event_keydown', (data) => {
+        console.info('收到远程桌面 rdp_event_keydown 请求', data);
+        socketServer.broadcast.emit('rdp_event_keydown', data);
+      });
+
       socketServer.on('rdp_verify_type', (data) => {
         console.info('收到远程桌面 rdp_verify_type 请求', data);
         socketServer.broadcast.emit('rdp_verify_type', data);
