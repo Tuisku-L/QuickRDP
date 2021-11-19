@@ -34,7 +34,7 @@ export default class Index extends React.Component<any, IState> {
     this.state = {
       sdImg: '',
       isFull: false,
-      hasMultipleScreen: true,
+      hasMultipleScreen: false,
       currentScreen: '屏幕 1',
       hiddenTools: false,
       isToggle: false,
@@ -58,6 +58,7 @@ export default class Index extends React.Component<any, IState> {
           {
             isInit: true,
             displayInfo,
+            hasMultipleScreen: displayInfo.length > 1,
           },
           async () => {
             await this.actionInitRemote(remoteIp);
@@ -65,6 +66,17 @@ export default class Index extends React.Component<any, IState> {
         );
       },
     );
+  };
+
+  actionChangeDisplay = (id: string | number) => {
+    if (this.remoteWs) {
+      this.remoteWs.emit('rdp_change_display', {
+        deviceId: window.deviceId,
+        data: {
+          id,
+        },
+      });
+    }
   };
 
   actionInitRemote = async (wsServer: string) => {
@@ -162,8 +174,14 @@ export default class Index extends React.Component<any, IState> {
   };
 
   public render() {
-    const { isFull, hasMultipleScreen, currentScreen, hiddenTools, isInit } =
-      this.state;
+    const {
+      isFull,
+      hasMultipleScreen,
+      currentScreen,
+      hiddenTools,
+      isInit,
+      displayInfo,
+    } = this.state;
 
     if (!isInit) {
       return <div>Loading..</div>;
@@ -212,9 +230,14 @@ export default class Index extends React.Component<any, IState> {
                 <Dropdown
                   overlay={
                     <Menu>
-                      <Menu.Item key="1">1st menu item</Menu.Item>
-                      <Menu.Item key="2">2nd menu item</Menu.Item>
-                      <Menu.Item key="3">3rd menu item</Menu.Item>
+                      {displayInfo.map((x, index) => (
+                        <Menu.Item
+                          key={x.display_id}
+                          onClick={() => this.actionChangeDisplay(x.id)}
+                        >
+                          屏幕{index + 1}
+                        </Menu.Item>
+                      ))}
                     </Menu>
                   }
                 >
