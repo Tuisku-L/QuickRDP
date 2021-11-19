@@ -113,6 +113,19 @@ export default class Index extends React.Component<any, IState> {
 
     window.socketLocal = window.socketClient.connect('ws://localhost:9550');
 
+    window.socketLocal.on('rdp_change_display', async (data) => {
+      if (data.deviceId !== window.deviceId) {
+        const stream = await this.actionGetDisplayStream(data.data.id);
+        console.info('data.data.id', data.data.id);
+        // @ts-ignore
+        conn.removeStream(stream);
+        // @ts-ignore
+        conn.addStream(stream);
+
+        await this.actionCreateOffer(conn);
+      }
+    });
+
     window.socketLocal.on('rdp_disconnection', (data) => {
       if (data.deviceId !== window.deviceId) {
         window.socketLocal.disconnect();
@@ -205,13 +218,7 @@ export default class Index extends React.Component<any, IState> {
 
     window.socketLocal.on('rdp_connection_ready', async (data) => {
       if (data.deviceId !== window.deviceId) {
-        const offer = await conn.createOffer();
-        conn.setLocalDescription(offer);
-        console.info('生成 offer', offer);
-        window.socketLocal.emit('rdp_webrtc_offer', {
-          deviceId: window.deviceId,
-          data: offer,
-        });
+        await this.actionCreateOffer(conn);
       }
     });
 
@@ -249,7 +256,7 @@ export default class Index extends React.Component<any, IState> {
     });
   };
 
-  actionGetDisplayStream = async () => {
+  actionGetDisplayStream = async (id?: string) => {
     const displays = window.utools.getAllDisplays();
     console.info('displays', displays);
     const sources = await window.desktopCapturer.getSources({
@@ -294,7 +301,7 @@ export default class Index extends React.Component<any, IState> {
           // @ts-ignore
           mandatory: {
             chromeMediaSource: 'desktop',
-            chromeMediaSourceId: displaysInfo[0].id,
+            chromeMediaSourceId: id || displaysInfo[0].id,
           },
         },
       });
@@ -303,6 +310,16 @@ export default class Index extends React.Component<any, IState> {
     } catch (error) {
       console.info('error', error);
     }
+  };
+
+  actionCreateOffer = async (conn: RTCPeerConnection) => {
+    const offer = await conn.createOffer();
+    conn.setLocalDescription(offer);
+    console.info('生成 offer', offer);
+    window.socketLocal.emit('rdp_webrtc_offer', {
+      deviceId: window.deviceId,
+      data: offer,
+    });
   };
 
   actionShowInfo = () => {

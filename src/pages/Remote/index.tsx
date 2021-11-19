@@ -20,6 +20,7 @@ interface IState {
   hiddenTools: boolean;
   isToggle: boolean;
   isInit: boolean;
+  displayInfo: RDP.DisplayInfo[];
 }
 
 export default class Index extends React.Component<any, IState> {
@@ -38,6 +39,7 @@ export default class Index extends React.Component<any, IState> {
       hiddenTools: false,
       isToggle: false,
       isInit: false,
+      displayInfo: [],
     };
   }
 
@@ -50,10 +52,12 @@ export default class Index extends React.Component<any, IState> {
       ) => {
         const { remoteIp, displayInfo } = data;
         const deviceId = utools.getNativeId();
+        console.info('displayInfo', displayInfo);
         window.deviceId = deviceId;
         this.setState(
           {
             isInit: true,
+            displayInfo,
           },
           async () => {
             await this.actionInitRemote(remoteIp);

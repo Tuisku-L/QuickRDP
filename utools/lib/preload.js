@@ -18357,6 +18357,11 @@ object-assign
         socketServer.broadcast.emit('rdp_answer_cecandidate', data);
       });
 
+      socketServer.on('rdp_change_display', (data) => {
+        console.info('收到远程桌面 rdp_change_display 请求', data);
+        socketServer.broadcast.emit('rdp_change_display', data);
+      });
+
       socketServer.on('rdp_event_click', (data) => {
         console.info('收到远程桌面 rdp_event_click 请求', data);
         socketServer.broadcast.emit('rdp_event_click', data);
