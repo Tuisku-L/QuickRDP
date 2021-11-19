@@ -245,6 +245,12 @@ export default class Index extends React.Component<any, IState> {
         window.utools.simulateMouseClick(data.data.x, data.data.y);
       }
     });
+
+    window.socketLocal.on('rdp_event_move', (data) => {
+      if (data.deviceId !== window.deviceId) {
+        window.utools.simulateMouseMove(data.data.x, data.data.y);
+      }
+    });
   };
 
   actionSendLoginSuccess = () => {

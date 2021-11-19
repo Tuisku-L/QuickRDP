@@ -24,6 +24,7 @@ interface IState {
   windowWidth: number;
   windowHeight: number;
   currentDisplayInfo: RDP.DisplayInfo | null;
+  isHideCursor: boolean;
 }
 
 export default class Index extends React.Component<any, IState> {
@@ -48,6 +49,7 @@ export default class Index extends React.Component<any, IState> {
       windowWidth: 0,
       windowHeight: 0,
       currentDisplayInfo: null,
+      isHideCursor: true,
     };
   }
 
@@ -174,13 +176,6 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionOnClick = (event: React.MouseEvent<HTMLVideoElement, MouseEvent>) => {
-    console.info(
-      'x: ',
-      event.nativeEvent.offsetX,
-      'y: ',
-      event.nativeEvent.offsetY,
-    );
-    console.info('event', event);
     const { windowHeight, windowWidth, currentDisplayInfo } = this.state;
 
     this.actionRectifyPos();
@@ -194,6 +189,27 @@ export default class Index extends React.Component<any, IState> {
       const { offsetX, offsetY } = event.nativeEvent;
       if (this.remoteWs) {
         this.remoteWs.emit('rdp_event_click', {
+          deviceId: window.deviceId,
+          data: { x: offsetX * x_num, y: offsetY * y_num },
+        });
+      }
+    }
+  };
+
+  actionOnMouseMove = (
+    event: React.MouseEvent<HTMLVideoElement, MouseEvent>,
+  ) => {
+    const { windowHeight, windowWidth, currentDisplayInfo } = this.state;
+    this.actionRectifyPos();
+    if (currentDisplayInfo) {
+      const x_num = currentDisplayInfo.size.width / windowWidth;
+      const y_num = currentDisplayInfo.size.height / windowHeight;
+
+      console.info('x_num', x_num, y_num);
+
+      const { offsetX, offsetY } = event.nativeEvent;
+      if (this.remoteWs) {
+        this.remoteWs.emit('rdp_event_move', {
           deviceId: window.deviceId,
           data: { x: offsetX * x_num, y: offsetY * y_num },
         });
@@ -234,6 +250,7 @@ export default class Index extends React.Component<any, IState> {
       hiddenTools,
       isInit,
       displayInfo,
+      isHideCursor,
     } = this.state;
 
     if (!isInit) {
@@ -279,6 +296,16 @@ export default class Index extends React.Component<any, IState> {
                   </span>
                 )}
               </Button>
+              <Button
+                type="primary"
+                onClick={() => {
+                  this.setState({
+                    isHideCursor: !isHideCursor,
+                  });
+                }}
+              >
+                <span>{isHideCursor ? '显示' : '隐藏'}本机光标</span>
+              </Button>
               {hasMultipleScreen && (
                 <Dropdown
                   overlay={
@@ -316,6 +343,8 @@ export default class Index extends React.Component<any, IState> {
           ref={(ref) => (this.videoRef = ref)}
           className={styles.remoteVideo}
           onClick={this.actionOnClick}
+          onMouseMove={this.actionOnMouseMove}
+          style={{ cursor: isHideCursor ? 'none' : 'unset' }}
         />
       </div>
     );

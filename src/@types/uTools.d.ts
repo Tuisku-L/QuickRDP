@@ -23,6 +23,7 @@ declare namespace utools {
   export function isDev(): boolean;
 
   export function simulateMouseClick(x: number, y: number): void;
+  export function simulateMouseMove(x: number, y: number): void;
   export function simulateMouseDoubleClick(x: number, y: number): void;
 
   export function getUser(): {
