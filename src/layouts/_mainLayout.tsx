@@ -26,26 +26,31 @@ export default class Index extends React.Component<any, IState> {
   }
 
   componentDidMount() {
-    window.utools.onPluginReady(() => {
-      const deviceId = utools.getNativeId();
-      window.deviceId = deviceId;
-
-      const userInfo = window.utools.getUser();
-      if (userInfo) {
-        this.setState({
-          userInfo,
-        });
-      }
-
-      this.actionInitSetting();
-      this.actionInitRemoteWebRTC();
-      this.actionInitPwd();
-
-      this.setState({
-        isInit: true,
-      });
-    });
+    // window.utools.onPluginReady(() => {
+    //   this.actionInitPlugin();
+    // });
+    this.actionInitPlugin();
   }
+
+  actionInitPlugin = () => {
+    const deviceId = utools.getNativeId();
+    window.deviceId = deviceId;
+
+    const userInfo = window.utools.getUser();
+    if (userInfo) {
+      this.setState({
+        userInfo,
+      });
+    }
+
+    this.actionInitSetting();
+    this.actionInitRemoteWebRTC();
+    this.actionInitPwd();
+
+    this.setState({
+      isInit: true,
+    });
+  };
 
   actionInitPwd = () => {
     let password = window.utools.db.get<RDP.Password>(
