@@ -21,6 +21,9 @@ interface IState {
   isToggle: boolean;
   isInit: boolean;
   displayInfo: RDP.DisplayInfo[];
+  windowWidth: number;
+  windowHeight: number;
+  currentDisplayInfo: RDP.DisplayInfo | null;
 }
 
 export default class Index extends React.Component<any, IState> {
@@ -28,6 +31,8 @@ export default class Index extends React.Component<any, IState> {
   imgContext: CanvasRenderingContext2D | null = null;
   videoRef: HTMLVideoElement | null = null;
   remoteWs: typeof window.socketLocal | null = null;
+  boxRef: HTMLDivElement | null = null;
+  senderId: number = 0;
 
   constructor(props: any) {
     super(props);
@@ -40,6 +45,9 @@ export default class Index extends React.Component<any, IState> {
       isToggle: false,
       isInit: false,
       displayInfo: [],
+      windowWidth: 0,
+      windowHeight: 0,
+      currentDisplayInfo: null,
     };
   }
 
@@ -47,17 +55,19 @@ export default class Index extends React.Component<any, IState> {
     window.ipcRenderer.on(
       'initRemote',
       async (
-        _: any,
+        sender: { senderId: number },
         data: { remoteIp: string; displayInfo: RDP.DisplayInfo[] },
       ) => {
         const { remoteIp, displayInfo } = data;
         const deviceId = utools.getNativeId();
         console.info('displayInfo', displayInfo);
         window.deviceId = deviceId;
+        this.senderId = sender.senderId;
         this.setState(
           {
             isInit: true,
             displayInfo,
+            currentDisplayInfo: displayInfo[0],
             hasMultipleScreen: displayInfo.length > 1,
           },
           async () => {
@@ -66,15 +76,34 @@ export default class Index extends React.Component<any, IState> {
         );
       },
     );
+
+    window.addEventListener('resize', () => {
+      if (this.videoRef && this.boxRef) {
+        if (this.videoRef.offsetWidth > this.boxRef.offsetWidth) {
+          this.boxRef.style.justifyContent = 'start';
+        } else {
+          this.boxRef.style.justifyContent = 'center';
+        }
+
+        this.setState({
+          windowWidth: this.videoRef.offsetWidth,
+          windowHeight: this.videoRef.offsetHeight,
+        });
+      }
+    });
   };
 
-  actionChangeDisplay = (id: string | number) => {
+  actionChangeDisplay = (displayInfo: RDP.DisplayInfo, index: number) => {
     if (this.remoteWs) {
       this.remoteWs.emit('rdp_change_display', {
         deviceId: window.deviceId,
         data: {
-          id,
+          id: displayInfo.id,
         },
+      });
+      this.setState({
+        currentScreen: `屏幕 ${index + 1}`,
+        currentDisplayInfo: displayInfo,
       });
     }
   };
@@ -108,8 +137,6 @@ export default class Index extends React.Component<any, IState> {
         this.videoRef.srcObject = e.stream;
       }
     };
-
-    const user = window.utools.getUser();
 
     this.remoteWs!.emit('rdp_connection_ready', {
       deviceId: window.deviceId,
@@ -147,12 +174,38 @@ export default class Index extends React.Component<any, IState> {
   };
 
   actionOnClick = (event: React.MouseEvent<HTMLVideoElement, MouseEvent>) => {
-    console.info('x: ', event.pageX, 'y: ', event.pageY);
-    const { pageX, pageY } = event;
-    if (this.remoteWs) {
-      this.remoteWs.emit('rdp_event_click', {
-        deviceId: window.deviceId,
-        data: { x: pageX, y: pageY },
+    console.info(
+      'x: ',
+      event.nativeEvent.offsetX,
+      'y: ',
+      event.nativeEvent.offsetY,
+    );
+    console.info('event', event);
+    const { windowHeight, windowWidth, currentDisplayInfo } = this.state;
+
+    this.actionRectifyPos();
+
+    if (currentDisplayInfo) {
+      const x_num = currentDisplayInfo.size.width / windowWidth;
+      const y_num = currentDisplayInfo.size.height / windowHeight;
+
+      console.info('x_num', x_num, y_num);
+
+      const { offsetX, offsetY } = event.nativeEvent;
+      if (this.remoteWs) {
+        this.remoteWs.emit('rdp_event_click', {
+          deviceId: window.deviceId,
+          data: { x: offsetX * x_num, y: offsetY * y_num },
+        });
+      }
+    }
+  };
+
+  actionRectifyPos = () => {
+    if (this.videoRef) {
+      this.setState({
+        windowWidth: this.videoRef.offsetWidth,
+        windowHeight: this.videoRef.offsetHeight,
       });
     }
   };
@@ -188,7 +241,7 @@ export default class Index extends React.Component<any, IState> {
     }
 
     return (
-      <div className={styles.remoteBox}>
+      <div className={styles.remoteBox} ref={(ref) => (this.boxRef = ref)}>
         <div
           className={`${styles.toolsLine}${
             hiddenTools ? ` ${styles.hidden}` : ''
@@ -233,7 +286,7 @@ export default class Index extends React.Component<any, IState> {
                       {displayInfo.map((x, index) => (
                         <Menu.Item
                           key={x.display_id}
-                          onClick={() => this.actionChangeDisplay(x.id)}
+                          onClick={() => this.actionChangeDisplay(x, index)}
                         >
                           屏幕{index + 1}
                         </Menu.Item>
@@ -260,9 +313,9 @@ export default class Index extends React.Component<any, IState> {
         </div>
         <video
           autoPlay
-          onClick={this.actionOnClick}
           ref={(ref) => (this.videoRef = ref)}
           className={styles.remoteVideo}
+          onClick={this.actionOnClick}
         />
       </div>
     );

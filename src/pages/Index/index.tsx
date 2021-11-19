@@ -244,10 +244,38 @@ export default class Index extends React.Component<any, IState> {
           'remoteWindow.webContents.id',
           remoteWindow.webContents.id,
         );
+
         window.ipcRenderer.sendTo(remoteWindow.webContents.id, 'initRemote', {
           remoteIp,
           displayInfo,
         });
+
+        window.ipcRenderer.on(
+          'resize_remote_height',
+          (
+            _: any,
+            data: {
+              width: number;
+              height: number;
+              currentHeight: number;
+              currentWidth: number;
+            },
+          ) => {
+            if (remoteWindow) {
+              console.info('data', data);
+              // 容错率 5px
+              if (
+                Math.abs(data.width - data.currentWidth) <= 5 &&
+                Math.abs(data.height - data.currentHeight) <= 5
+              ) {
+                console.info('is 5px');
+                return;
+              }
+
+              remoteWindow.setSize(data.width, data.height);
+            }
+          },
+        );
       },
     );
   };

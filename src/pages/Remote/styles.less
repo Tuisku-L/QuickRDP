@@ -1,5 +1,10 @@
 .remoteBox {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: black;
+  height: 100%;
 
   .toolsLine {
     width: max-content;
@@ -10,7 +15,7 @@
     right: 0;
     z-index: 99;
     text-align: center;
-    transition: all .3s ease;
+    transition: all 0.3s ease;
 
     &.hidden {
       top: -27px;
@@ -24,5 +29,6 @@
 
   .remoteVideo {
     z-index: 10;
+    height: 100%;
   }
 }
