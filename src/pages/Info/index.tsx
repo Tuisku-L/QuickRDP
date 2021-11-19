@@ -2,13 +2,19 @@ import React from 'react';
 import moment from 'moment';
 
 import { Avatar } from 'antd';
-import { CloseCircleOutlined } from '@ant-design/icons';
+import {
+  CloseCircleOutlined,
+  RightSquareOutlined,
+  LeftSquareOutlined,
+} from '@ant-design/icons';
 
 import styles from './styles.less';
 
 interface IProps {}
 
-interface IState {}
+interface IState {
+  isHide: boolean;
+}
 
 const fakeUser = [
   {
@@ -20,16 +26,61 @@ const fakeUser = [
 ];
 
 class Index extends React.Component<IProps, IState> {
+  senderId: number = 0;
   constructor(props: IProps) {
     super(props);
-    this.state = {};
+    this.state = {
+      isHide: false,
+    };
   }
 
-  componentDidMount() {}
+  componentDidMount() {
+    window.ipcRenderer.on(
+      'remoteInfo',
+      async (
+        sender: { senderId: number },
+        data: { remoteIp: string; displayInfo: RDP.DisplayInfo[] },
+      ) => {
+        console.info('remoteInfo', data);
+        if (sender.senderId && sender.senderId > 0) {
+          this.senderId = sender.senderId;
+        }
+      },
+    );
+  }
 
-  actionClickHide = () => {};
+  actionClickHide = () => {
+    console.info('this.senderId', this.senderId);
+    window.ipcRenderer.sendTo(this.senderId, 'info_hide', {});
+    this.setState({
+      isHide: true,
+    });
+  };
+
+  actionClickShow = () => {
+    console.info('this.senderId', this.senderId);
+    window.ipcRenderer.sendTo(this.senderId, 'info_show', {});
+    this.setState({
+      isHide: false,
+    });
+  };
+
+  actionClickClose = () => {
+    console.info('this.senderId', this.senderId);
+    window.ipcRenderer.sendTo(this.senderId, 'info_close', {});
+  };
 
   public render() {
+    const { isHide } = this.state;
+
+    if (isHide) {
+      return (
+        <div className={styles.hideBox} onClick={this.actionClickShow}>
+          <LeftSquareOutlined />
+        </div>
+      );
+    }
+
     return (
       <div className={styles.infoBox}>
         <div className={styles.header}>
@@ -38,6 +89,10 @@ class Index extends React.Component<IProps, IState> {
             QuickRDP
             <br />
             <span>for uTools</span>
+          </div>
+          <div className={styles.hide} onClick={this.actionClickHide}>
+            隐藏&nbsp;&nbsp;
+            <RightSquareOutlined />
           </div>
         </div>
         <div className={styles.infoBox}>
@@ -60,7 +115,9 @@ class Index extends React.Component<IProps, IState> {
             ))}
           </div>
         </div>
-        <div className={styles.closeAll}>关闭连接</div>
+        <div className={styles.closeAll} onClick={this.actionClickClose}>
+          关闭连接
+        </div>
       </div>
     );
   }

@@ -320,7 +320,6 @@ export default class Index extends React.Component<any, IState> {
         maximizable: false,
         skipTaskbar: true,
         alwaysOnTop: true,
-        transparent: true,
         frame: false,
         x,
         y,
@@ -333,8 +332,33 @@ export default class Index extends React.Component<any, IState> {
           infoWindow.webContents.openDevTools();
         }
         window.ipcRenderer.sendTo(infoWindow.webContents.id, 'remoteInfo', {});
+        console.info(':sdf', infoWindow);
       },
     );
+
+    window.ipcRenderer.on('info_close', () => {
+      if (infoWindow) {
+        infoWindow.close();
+      }
+    });
+
+    window.ipcRenderer.on('info_hide', () => {
+      if (infoWindow) {
+        infoWindow.setSize(20, 300);
+        const x = mainWindow.size.width - 20;
+        const y = mainWindow.size.height - 300;
+        infoWindow.setPosition(x, y);
+      }
+    });
+
+    window.ipcRenderer.on('info_show', () => {
+      if (infoWindow) {
+        infoWindow.setSize(300, 300);
+        const x = mainWindow.size.width - 300;
+        const y = mainWindow.size.height - 300;
+        infoWindow.setPosition(x, y);
+      }
+    });
   };
 
   public render() {
