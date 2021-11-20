@@ -254,7 +254,20 @@ export default class Index extends React.Component<any, IState> {
 
     window.socketLocal.on('rdp_event_keydown', (data) => {
       if (data.deviceId !== window.deviceId) {
-        window.utools.simulateKeyboardTap(data.data);
+        const keyEvent: Partial<React.KeyboardEvent<HTMLVideoElement>> =
+          data.data;
+        const keys = [];
+        keys.push(keyEvent.key!);
+        if (keyEvent.ctrlKey) {
+          keys.push('ctrl');
+        }
+        if (keyEvent.altKey) {
+          keys.push('alt');
+        }
+        if (keyEvent.metaKey) {
+          keys.push('meta');
+        }
+        window.utools.simulateKeyboardTap(...keys);
       }
     });
   };

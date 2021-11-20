@@ -227,7 +227,12 @@ export default class Index extends React.Component<any, IState> {
     if (this.remoteWs) {
       this.remoteWs.emit('rdp_event_keydown', {
         deviceId: window.deviceId,
-        data: e.key.toLowerCase(),
+        data: {
+          key: e.key,
+          ctrlKey: e.ctrlKey,
+          altKey: e.altKey,
+          metaKey: e.metaKey,
+        },
       });
     }
   };
