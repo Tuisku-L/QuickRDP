@@ -27,6 +27,7 @@
     "electron": "^15.3.0",
     "iclipboard": "^1.0.1",
     "linq": "^3.2.3",
+    "robotjs": "^0.6.0",
     "screenshot-desktop": "^1.12.7",
     "socket.io": "^4.3.1",
     "socket.io-client": "^4.3.2",

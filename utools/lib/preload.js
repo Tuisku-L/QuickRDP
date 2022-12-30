@@ -18269,12 +18269,10 @@ object-assign
     const process = __nccwpck_require__(3129);
     const fs = __nccwpck_require__(5747);
     const os = __nccwpck_require__(2087);
-    const { desktopCapturer, ipcRenderer, webFrame } = require('electron');
-    const test = require('electron');
+    const { desktopCapturer, ipcRenderer } = require('electron');
+    const robotjs = require('robotjs');
 
-    window.webFrame = webFrame;
-
-    console.info('test', test);
+    window.robotjs = robotjs;
 
     window.utools = utools;
     window.execShell = process;

@@ -367,6 +367,7 @@ export default class Index extends React.Component<any, IState> {
           onKeyDown={this.actionOnKeyPress}
           style={{ cursor: isHideCursor ? 'none' : 'unset' }}
           contentEditable
+          preload="auto"
         />
       </div>
     );
